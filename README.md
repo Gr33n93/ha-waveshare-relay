@@ -120,4 +120,5 @@ Danach Home Assistant neu starten.
 - Laufzeitwerte werden sessionbasiert gezählt und nach Neustart oder Reset neu
   begonnen.
 - RS485/RTU-Boards wie das Modbus RTU Relay 4CH werden nicht unterstützt.
-- `pymodbus` wird automatisch installiert.
+- Die Integration nutzt die Modbus-Bibliothek, die Home Assistant über die
+  eingebaute Modbus-Integration bereitstellt.

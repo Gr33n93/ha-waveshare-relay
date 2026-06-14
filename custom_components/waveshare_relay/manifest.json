@@ -1,6 +1,7 @@
 {
   "domain": "waveshare_relay",
   "name": "Waveshare Modbus PoE Ethernet Relay",
+  "after_dependencies": ["modbus"],
   "codeowners": ["@Gr33n93"],
   "config_flow": true,
   "dependencies": [],
@@ -9,6 +10,5 @@
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/Gr33n93/ha-waveshare-relay/issues",
   "loggers": ["pymodbus"],
-  "requirements": ["pymodbus==3.11.2"],
-  "version": "1.1.0"
+  "version": "1.1.5"
 }

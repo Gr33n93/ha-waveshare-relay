@@ -1,7 +1,7 @@
 """Konstanten für die Waveshare PoE Relay Integration."""
 
 DOMAIN = "waveshare_relay"
-VERSION = "1.1.0"
+VERSION = "1.1.5"
 
 # Config keys
 CONF_HOST = "host"
