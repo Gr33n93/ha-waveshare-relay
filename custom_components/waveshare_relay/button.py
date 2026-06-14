@@ -10,7 +10,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, VERSION
+from .const import DOMAIN, VERSION, model_name_for_relay_count
 from .coordinator import WaveshareRelayCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -33,12 +33,12 @@ async def async_setup_entry(
     )
 
 
-def _device_info(entry: ConfigEntry) -> dict:
+def _device_info(entry: ConfigEntry, coordinator: WaveshareRelayCoordinator) -> dict:
     return {
         "identifiers": {(DOMAIN, entry.entry_id)},
         "name": f"Waveshare Relay ({entry.data.get('host', '?')})",
         "manufacturer": "Waveshare / ZLAN",
-        "model": "PoE ETH Relay 8CH",
+        "model": model_name_for_relay_count(coordinator.relay_count),
         "sw_version": VERSION,
         "configuration_url": "https://github.com/Gr33n93/ha-waveshare-relay",
     }
@@ -57,7 +57,7 @@ class WaveshareTestStartButton(
     def __init__(self, coordinator, entry) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry.entry_id}_test_start"
-        self._attr_device_info = _device_info(entry)
+        self._attr_device_info = _device_info(entry, coordinator)
 
     async def async_press(self) -> None:
         await self.coordinator.async_start_test(
@@ -78,7 +78,7 @@ class WaveshareTestStopButton(
     def __init__(self, coordinator, entry) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry.entry_id}_test_stop"
-        self._attr_device_info = _device_info(entry)
+        self._attr_device_info = _device_info(entry, coordinator)
 
     async def async_press(self) -> None:
         await self.coordinator.async_stop_test()
@@ -97,7 +97,7 @@ class WaveshareAllOffButton(
     def __init__(self, coordinator, entry) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry.entry_id}_all_off"
-        self._attr_device_info = _device_info(entry)
+        self._attr_device_info = _device_info(entry, coordinator)
 
     async def async_press(self) -> None:
         await self.coordinator.async_all_off()
@@ -116,7 +116,7 @@ class WaveshareResetStatsButton(
     def __init__(self, coordinator, entry) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry.entry_id}_reset_stats"
-        self._attr_device_info = _device_info(entry)
+        self._attr_device_info = _device_info(entry, coordinator)
 
     async def async_press(self) -> None:
         self.coordinator.reset_stats()

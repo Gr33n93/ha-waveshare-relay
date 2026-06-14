@@ -1,6 +1,6 @@
 {
   "domain": "waveshare_relay",
-  "name": "Waveshare PoE Ethernet Relay (8CH)",
+  "name": "Waveshare Modbus PoE Ethernet Relay",
   "codeowners": ["@Gr33n93"],
   "config_flow": true,
   "dependencies": [],
@@ -10,5 +10,5 @@
   "issue_tracker": "https://github.com/Gr33n93/ha-waveshare-relay/issues",
   "loggers": ["pymodbus"],
   "requirements": ["pymodbus==3.11.2"],
-  "version": "1.0.5"
+  "version": "1.1.0"
 }

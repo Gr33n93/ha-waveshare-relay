@@ -46,4 +46,4 @@ statistik_zuruecksetzen:
 
 alle_aus:
   name: Alle Relais aus
-  description: Schaltet alle 8 Relais sofort aus.
+  description: Schaltet alle Relais des konfigurierten Boards sofort aus.

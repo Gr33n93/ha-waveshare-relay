@@ -15,9 +15,12 @@ from .const import (
     DOMAIN,
     CONF_UNIT_ID,
     CONF_POLL_INTERVAL,
+    CONF_RELAY_COUNT,
     DEFAULT_PORT,
     DEFAULT_UNIT_ID,
     DEFAULT_POLL_INTERVAL,
+    DEFAULT_RELAY_COUNT,
+    SUPPORTED_RELAY_COUNTS,
 )
 from .modbus_compat import read_coils_compat
 
@@ -34,6 +37,9 @@ STEP_USER_SCHEMA = vol.Schema(
         ),
         vol.Required(CONF_POLL_INTERVAL, default=DEFAULT_POLL_INTERVAL): vol.All(
             int, vol.Range(min=1, max=10)
+        ),
+        vol.Required(CONF_RELAY_COUNT, default=DEFAULT_RELAY_COUNT): vol.All(
+            vol.Coerce(int), vol.In(SUPPORTED_RELAY_COUNTS)
         ),
     }
 )
@@ -54,6 +60,7 @@ class WaveshareRelayConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             host = user_input[CONF_HOST].strip()
             port = user_input[CONF_PORT]
             unit_id = user_input[CONF_UNIT_ID]
+            relay_count = user_input[CONF_RELAY_COUNT]
 
             if not host:
                 errors["base"] = "invalid_host"
@@ -65,7 +72,7 @@ class WaveshareRelayConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     if not connected:
                         raise ConnectionError("Keine Verbindung")
                     result = await read_coils_compat(
-                        client, address=0, count=8, unit_id=unit_id
+                        client, address=0, count=relay_count, unit_id=unit_id
                     )
                     if result.isError():
                         raise ConnectionError(f"Modbus-Fehler: {result}")
@@ -84,6 +91,7 @@ class WaveshareRelayConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             CONF_PORT: port,
                             CONF_UNIT_ID: unit_id,
                             CONF_POLL_INTERVAL: user_input[CONF_POLL_INTERVAL],
+                            CONF_RELAY_COUNT: relay_count,
                         },
                     )
                 finally:

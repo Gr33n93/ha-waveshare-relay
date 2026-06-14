@@ -8,7 +8,8 @@
           "host": "IP-Adresse",
           "port": "Modbus TCP Port",
           "unit_id": "Modbus Unit-ID",
-          "poll_interval": "Abfrageintervall (Sekunden)"
+          "poll_interval": "Abfrageintervall (Sekunden)",
+          "relay_count": "Relaisanzahl"
         }
       }
     },

@@ -1,4 +1,4 @@
-"""Switch-Plattform: 8 Relais als HA-Switches."""
+"""Switch-Plattform: Relais als HA-Switches."""
 from __future__ import annotations
 
 import logging
@@ -10,7 +10,13 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, NUM_RELAYS, VERSION, ATTR_ON_DURATION, ATTR_OFF_DURATION
+from .const import (
+    DOMAIN,
+    VERSION,
+    ATTR_ON_DURATION,
+    ATTR_OFF_DURATION,
+    model_name_for_relay_count,
+)
 from .coordinator import WaveshareRelayCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -25,7 +31,7 @@ async def async_setup_entry(
     coordinator: WaveshareRelayCoordinator = hass.data[DOMAIN][entry.entry_id]
     entities = [
         WaveshareRelaySwitch(coordinator, entry, channel)
-        for channel in range(NUM_RELAYS)
+        for channel in range(coordinator.relay_count)
     ]
     async_add_entities(entities)
 
@@ -47,7 +53,7 @@ class WaveshareRelaySwitch(CoordinatorEntity[WaveshareRelayCoordinator], SwitchE
         self._attr_unique_id = f"{entry.entry_id}_relay_{channel + 1}"
         self._attr_name = coordinator.relay_names[channel]
         self._attr_icon = "mdi:electric-switch"
-        self._attr_device_info = _device_info(entry)
+        self._attr_device_info = _device_info(entry, coordinator)
 
     @property
     def is_on(self) -> bool:
@@ -88,13 +94,13 @@ class WaveshareRelaySwitch(CoordinatorEntity[WaveshareRelayCoordinator], SwitchE
         self.async_write_ha_state()
 
 
-def _device_info(entry: ConfigEntry) -> dict:
+def _device_info(entry: ConfigEntry, coordinator: WaveshareRelayCoordinator) -> dict:
     """Geräte-Info für alle Entities dieses Boards."""
     return {
         "identifiers": {(DOMAIN, entry.entry_id)},
         "name": f"Waveshare Relay ({entry.data.get('host', '?')})",
         "manufacturer": "Waveshare / ZLAN",
-        "model": "PoE ETH Relay 8CH",
+        "model": model_name_for_relay_count(coordinator.relay_count),
         "sw_version": VERSION,
         "configuration_url": "https://github.com/Gr33n93/ha-waveshare-relay",
     }

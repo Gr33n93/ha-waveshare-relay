@@ -15,7 +15,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .const import DOMAIN, NUM_RELAYS, DEFAULT_POLL_INTERVAL
+from .const import DOMAIN, DEFAULT_POLL_INTERVAL, DEFAULT_RELAY_COUNT
 from .modbus_compat import read_coils_compat, write_coil_compat
 
 _LOGGER = logging.getLogger(__name__)
@@ -31,6 +31,7 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
         port: int,
         unit_id: int,
         poll_interval: int = DEFAULT_POLL_INTERVAL,
+        relay_count: int = DEFAULT_RELAY_COUNT,
         relay_names: list[str] | None = None,
     ) -> None:
         super().__init__(
@@ -42,12 +43,15 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
         self.host = host
         self.port = port
         self.unit_id = unit_id
-        self.relay_names = relay_names or [f"Relais {i}" for i in range(1, 9)]
+        self.relay_count = relay_count
+        self.relay_names = relay_names or [
+            f"Relais {i}" for i in range(1, self.relay_count + 1)
+        ]
 
         self._client: AsyncModbusTcpClient | None = None
         self._lock = asyncio.Lock()
 
-        self.relay_states: list[bool] = [False] * NUM_RELAYS
+        self.relay_states: list[bool] = [False] * self.relay_count
 
         self.stats: dict[str, Any] = {
             "abfragen_gesamt": 0,
@@ -64,7 +68,7 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
         }
 
         self.channel_stats: list[dict[str, Any]] = []
-        for _ in range(NUM_RELAYS):
+        for _ in range(self.relay_count):
             self.channel_stats.append({
                 "ein_zaehler": 0,
                 "aus_zaehler": 0,
@@ -153,7 +157,7 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
             async with self._lock:
                 client = await self._ensure_connected()
                 result = await read_coils_compat(
-                    client, address=0, count=NUM_RELAYS, unit_id=self.unit_id
+                    client, address=0, count=self.relay_count, unit_id=self.unit_id
                 )
             if result.isError():
                 raise UpdateFailed(f"FC01-Fehler: {result}")
@@ -165,7 +169,7 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
             self.stats["letzter_erfolg_zeit"] = _iso_now()
             self.stats["verbunden"] = True
 
-            for i in range(NUM_RELAYS):
+            for i in range(self.relay_count):
                 new_state = bool(result.bits[i])
                 self._apply_relay_state(i, new_state, now_mono)
 
@@ -224,7 +228,7 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
 
     async def async_all_off(self) -> None:
         errors: list[str] = []
-        for ch in range(NUM_RELAYS):
+        for ch in range(self.relay_count):
             try:
                 await self.async_write_coil(ch, False, "alle_aus")
             except Exception as err:
@@ -263,7 +267,7 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
         try:
             await self.async_all_off()
             while True:
-                for ch in range(NUM_RELAYS):
+                for ch in range(self.relay_count):
                     if self.test_stop:
                         return
                     self.test_current_channel = ch + 1

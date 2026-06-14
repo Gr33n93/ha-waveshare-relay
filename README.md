@@ -1,17 +1,25 @@
-# Waveshare PoE Ethernet Relay (8CH)
+# Waveshare Modbus PoE Ethernet Relay
 
 ![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5?style=for-the-badge)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Custom%20Integration-18BCF2?style=for-the-badge)
 ![Release](https://img.shields.io/github/v/release/Gr33n93/ha-waveshare-relay?style=for-the-badge)
 
-Home-Assistant-Integration für das Waveshare PoE Ethernet Relay Board mit 8
-Relais. Die Kommunikation läuft lokal per Modbus TCP.
+Home-Assistant-Integration für Waveshare Modbus PoE Ethernet Relay Boards. Die
+Kommunikation läuft lokal per Modbus TCP.
+
+## Unterstützte Geräte
+
+| Gerät | Relais |
+| --- | ---: |
+| Modbus POE ETH Relay | 8 |
+| Modbus POE ETH Relay 16CH | 16 |
+| Modbus POE ETH Relay 30CH | 30 |
 
 ## Überblick
 
 | Bereich | Funktion |
 | --- | --- |
-| Relais | 8 Schalter für die Kanäle 1 bis 8 |
+| Relais | Schalter für alle konfigurierten Kanäle |
 | Status | Live-Abfrage per Modbus FC01 |
 | Schalten | Relaissteuerung per Modbus FC05 |
 | Diagnose | Verbindung, Reaktionszeit, Fehler und Schreibzähler |
@@ -51,6 +59,7 @@ Benötigte Daten:
 | Port | `502` |
 | Unit-ID | meistens `1` |
 | Abfrageintervall | Standard `2` Sekunden |
+| Relaisanzahl | `8`, `16` oder `30` |
 
 Beim Speichern führt Home Assistant einen Verbindungstest aus. Danach werden die
 Entities automatisch angelegt.
@@ -59,9 +68,9 @@ Entities automatisch angelegt.
 
 | Typ | Anzahl | Beschreibung |
 | --- | ---: | --- |
-| `switch` | 8 | Relais 1 bis 8 |
+| `switch` | Relaisanzahl | Ein Schalter pro Relais |
 | `binary_sensor` | 1 | Verbindungsstatus |
-| `sensor` | 51 | Statistik, Laufzeiten, Zähler und Teststatus |
+| `sensor` | 11 + 5 pro Relais | Statistik, Laufzeiten, Zähler und Teststatus |
 | `button` | 4 | Funktionstest, Alle aus, Statistik zurücksetzen |
 
 ## Services
@@ -83,7 +92,7 @@ Parameter für `funktionstest_start`:
 
 ## Dashboard
 
-`lovelace_dashboard.yaml` enthält ein Beispiel-Dashboard mit:
+`lovelace_dashboard.yaml` enthält ein Beispiel-Dashboard für ein 8CH-Board mit:
 
 - Relaissteuerung
 - Statistik
@@ -110,4 +119,5 @@ Danach Home Assistant neu starten.
 - Andere Modbus-Adapter oder Testtools sollten nicht parallel verbunden sein.
 - Laufzeitwerte werden sessionbasiert gezählt und nach Neustart oder Reset neu
   begonnen.
+- RS485/RTU-Boards wie das Modbus RTU Relay 4CH werden nicht unterstützt.
 - `pymodbus` wird automatisch installiert.

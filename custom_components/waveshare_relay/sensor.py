@@ -11,7 +11,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, NUM_RELAYS, VERSION
+from .const import DOMAIN, VERSION, model_name_for_relay_count
 from .coordinator import WaveshareRelayCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -48,7 +48,7 @@ async def async_setup_entry(
     entities.append(WaveshareTestStatusSensor(coordinator, entry))
 
     # Pro-Kanal: EIN-Dauer, AUS-Dauer, Zähler
-    for ch in range(NUM_RELAYS):
+    for ch in range(coordinator.relay_count):
         entities.append(WaveshareChannelDurationSensor(coordinator, entry, ch, "ein"))
         entities.append(WaveshareChannelDurationSensor(coordinator, entry, ch, "aus"))
         entities.append(WaveshareChannelCounterSensor(coordinator, entry, ch, "ein"))
@@ -74,7 +74,7 @@ class WaveshareGlobalSensor(
         self._attr_icon = sdef["icon"]
         self._attr_native_unit_of_measurement = sdef["unit"]
         self._attr_state_class = sdef["cls"]
-        self._attr_device_info = _device_info(entry)
+        self._attr_device_info = _device_info(entry, coordinator)
 
     @property
     def native_value(self) -> Any:
@@ -98,7 +98,7 @@ class WaveshareTestStatusSensor(
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry.entry_id}_test_status"
         self._attr_name = "Funktionstest"
-        self._attr_device_info = _device_info(entry)
+        self._attr_device_info = _device_info(entry, coordinator)
 
     @property
     def native_value(self) -> str:
@@ -137,7 +137,7 @@ class WaveshareChannelDurationSensor(
         self._attr_unique_id = f"{entry.entry_id}_ch{channel + 1}_{kind}_dauer"
         self._attr_name = f"Relais {channel + 1} {label}"
         self._attr_icon = "mdi:timer-play" if kind == "ein" else "mdi:timer-pause"
-        self._attr_device_info = _device_info(entry)
+        self._attr_device_info = _device_info(entry, coordinator)
 
     @property
     def native_value(self) -> float:
@@ -169,7 +169,7 @@ class WaveshareChannelCounterSensor(
         self._attr_unique_id = f"{entry.entry_id}_ch{channel + 1}_{kind}_cnt"
         self._attr_name = f"Relais {channel + 1} {labels[kind]}"
         self._attr_icon = icons[kind]
-        self._attr_device_info = _device_info(entry)
+        self._attr_device_info = _device_info(entry, coordinator)
 
     @property
     def native_value(self) -> int:
@@ -180,12 +180,12 @@ class WaveshareChannelCounterSensor(
         self.async_write_ha_state()
 
 
-def _device_info(entry: ConfigEntry) -> dict:
+def _device_info(entry: ConfigEntry, coordinator: WaveshareRelayCoordinator) -> dict:
     return {
         "identifiers": {(DOMAIN, entry.entry_id)},
         "name": f"Waveshare Relay ({entry.data.get('host', '?')})",
         "manufacturer": "Waveshare / ZLAN",
-        "model": "PoE ETH Relay 8CH",
+        "model": model_name_for_relay_count(coordinator.relay_count),
         "sw_version": VERSION,
         "configuration_url": "https://github.com/Gr33n93/ha-waveshare-relay",
     }

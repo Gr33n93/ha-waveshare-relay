@@ -1,4 +1,4 @@
-"""Waveshare PoE Ethernet Relay (8CH) – Home Assistant Integration."""
+"""Waveshare Modbus PoE Ethernet Relay Home Assistant Integration."""
 from __future__ import annotations
 
 import logging
@@ -13,7 +13,9 @@ from .const import (
     DOMAIN,
     CONF_UNIT_ID,
     CONF_POLL_INTERVAL,
+    CONF_RELAY_COUNT,
     DEFAULT_POLL_INTERVAL,
+    DEFAULT_RELAY_COUNT,
     SERVICE_START_TEST,
     SERVICE_STOP_TEST,
     SERVICE_RESET_STATS,
@@ -53,6 +55,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         port=entry.data[CONF_PORT],
         unit_id=entry.data[CONF_UNIT_ID],
         poll_interval=entry.data.get(CONF_POLL_INTERVAL, DEFAULT_POLL_INTERVAL),
+        relay_count=entry.data.get(CONF_RELAY_COUNT, DEFAULT_RELAY_COUNT),
     )
 
     await coordinator.async_config_entry_first_refresh()

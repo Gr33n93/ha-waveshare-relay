@@ -95,8 +95,8 @@ views:
         tap_action:
           action: call-service
           service: waveshare_relay.alle_aus
-          confirmation:
-            text: Wirklich alle 8 Relais ausschalten?
+        confirmation:
+          text: Wirklich alle Relais ausschalten?
 
   # ═══════════════════════════════════════════════════════════════════════════
   # VIEW 2: Statistik & Monitoring
