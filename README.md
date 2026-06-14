@@ -101,24 +101,6 @@ Die Datei `lovelace_dashboard.yaml` enthält ein fertiges 4-View-Dashboard:
 - **pymodbus**: Wird automatisch in Version `3.13.0` installiert. Falls Probleme auftreten,
   manuell prüfen: `pip list | grep pymodbus`
 
-## HACS Default Store
-
-Für die Aufnahme in den HACS Default Store muss das Repository öffentlich auf GitHub
-liegen und die Validierungen müssen grün sein.
-
-Checkliste:
-- `hacs.json` im Repository-Root ist vorhanden.
-- `.github/workflows/validate.yml` führt HACS Action und Hassfest aus.
-- `custom_components/waveshare_relay/manifest.json` enthält Version, Dokumentation,
-  Issue-Tracker, Requirements und `iot_class`.
-- Eine Lizenz ist vorhanden.
-- Es gibt einen GitHub Release, z.B. `v1.0.4`.
-- Für die Default-Store-Aufnahme wird ein neutrales Icon/Logo über das
-  Home-Assistant-Brands-Repository vorbereitet. Keine Herstellerlogos verwenden,
-  wenn die Nutzungsrechte nicht eindeutig geklärt sind.
-- Danach einen Pull Request gegen `hacs/default` öffnen und das Repository in der
-  Integrationsliste eintragen.
-
 ## Feature-Übersicht vs. ioBroker-Script
 
 | Feature                     | ioBroker ✓ | HA ✓ |
