@@ -1,0 +1,23 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Waveshare PoE Relay verbinden",
+        "description": "🔌 Verbindungsdaten des Relay-Boards eingeben.\n\nEs wird automatisch ein Verbindungstest durchgeführt.",
+        "data": {
+          "host": "IP-Adresse",
+          "port": "Modbus TCP Port",
+          "unit_id": "Modbus Unit-ID",
+          "poll_interval": "Abfrageintervall (Sekunden)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Verbindung fehlgeschlagen – IP, Port und Unit-ID prüfen.",
+      "invalid_host": "Bitte eine gültige IP-Adresse eingeben."
+    },
+    "abort": {
+      "already_configured": "Dieses Board ist bereits konfiguriert."
+    }
+  }
+}

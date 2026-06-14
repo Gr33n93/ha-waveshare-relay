@@ -1,0 +1,14 @@
+{
+  "domain": "waveshare_relay",
+  "name": "Waveshare PoE Ethernet Relay (8CH)",
+  "codeowners": ["@Gr33n93"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/Gr33n93/ha-waveshare-relay",
+  "integration_type": "hub",
+  "issue_tracker": "https://github.com/Gr33n93/ha-waveshare-relay/issues",
+  "iot_class": "local_polling",
+  "loggers": ["pymodbus"],
+  "requirements": ["pymodbus==3.13.0"],
+  "version": "1.0.4"
+}

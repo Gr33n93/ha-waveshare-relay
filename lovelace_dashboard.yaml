@@ -1,0 +1,354 @@
+###############################################################################
+# Waveshare PoE Relay – Lovelace Dashboard
+# ─────────────────────────────────────────────────────────────────────────────
+# Einbinden:  HA → Einstellungen → Dashboards → + Dashboard → YAML-Modus
+# Oder als View in ein bestehendes Dashboard kopieren.
+#
+# HINWEIS: Entity-IDs passen sich dem Gerätenamen an.
+#   Standard-Prefix: switch.waveshare_relay_*  /  sensor.waveshare_relay_*
+#   Falls abweichend → in HA unter Geräte & Dienste → Waveshare Relay
+#   die tatsächlichen Entity-IDs nachschauen und hier anpassen.
+###############################################################################
+
+title: Waveshare Relay
+views:
+  # ═══════════════════════════════════════════════════════════════════════════
+  # VIEW 1: Relais-Steuerung
+  # ═══════════════════════════════════════════════════════════════════════════
+  - title: Relais
+    path: relais
+    icon: mdi:electric-switch
+    cards:
+
+      # ── Verbindungsstatus ──
+      - type: entity
+        entity: binary_sensor.waveshare_relay_verbindung
+        name: Board-Verbindung
+        icon: mdi:lan-connect
+
+      # ── 8 Relais als Grid ──
+      - type: grid
+        columns: 4
+        square: true
+        cards:
+          - type: button
+            entity: switch.waveshare_relay_relais_1
+            name: Relais 1
+            icon: mdi:electric-switch
+            show_state: true
+            tap_action:
+              action: toggle
+          - type: button
+            entity: switch.waveshare_relay_relais_2
+            name: Relais 2
+            icon: mdi:electric-switch
+            show_state: true
+            tap_action:
+              action: toggle
+          - type: button
+            entity: switch.waveshare_relay_relais_3
+            name: Relais 3
+            icon: mdi:electric-switch
+            show_state: true
+            tap_action:
+              action: toggle
+          - type: button
+            entity: switch.waveshare_relay_relais_4
+            name: Relais 4
+            icon: mdi:electric-switch
+            show_state: true
+            tap_action:
+              action: toggle
+          - type: button
+            entity: switch.waveshare_relay_relais_5
+            name: Relais 5
+            icon: mdi:electric-switch
+            show_state: true
+            tap_action:
+              action: toggle
+          - type: button
+            entity: switch.waveshare_relay_relais_6
+            name: Relais 6
+            icon: mdi:electric-switch
+            show_state: true
+            tap_action:
+              action: toggle
+          - type: button
+            entity: switch.waveshare_relay_relais_7
+            name: Relais 7
+            icon: mdi:electric-switch
+            show_state: true
+            tap_action:
+              action: toggle
+          - type: button
+            entity: switch.waveshare_relay_relais_8
+            name: Relais 8
+            icon: mdi:electric-switch
+            show_state: true
+            tap_action:
+              action: toggle
+
+      # ── Notaus ──
+      - type: button
+        name: "⚡ ALLE AUS"
+        icon: mdi:power-off
+        tap_action:
+          action: call-service
+          service: waveshare_relay.alle_aus
+          confirmation:
+            text: Wirklich alle 8 Relais ausschalten?
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # VIEW 2: Statistik & Monitoring
+  # ═══════════════════════════════════════════════════════════════════════════
+  - title: Statistik
+    path: statistik
+    icon: mdi:chart-bar
+    cards:
+
+      # ── Verbindung & Reaktionszeit ──
+      - type: entities
+        title: Verbindung
+        show_header_toggle: false
+        entities:
+          - entity: binary_sensor.waveshare_relay_verbindung
+            name: Status
+          - entity: sensor.waveshare_relay_reaktionszeit
+            name: Reaktionszeit
+          - entity: sensor.waveshare_relay_letzter_erfolg_zeit
+            name: Letzter Erfolg
+          - entity: sensor.waveshare_relay_letzter_fehler_zeit
+            name: Letzter Fehler
+
+      # ── Reaktionszeit Graph ──
+      - type: history-graph
+        title: Reaktionszeit (Verlauf)
+        hours_to_show: 24
+        entities:
+          - entity: sensor.waveshare_relay_reaktionszeit
+            name: ms
+
+      # ── Abfragen ──
+      - type: entities
+        title: Abfragen (Lesen)
+        show_header_toggle: false
+        entities:
+          - entity: sensor.waveshare_relay_abfragen_gesamt
+            name: Gesamt
+          - entity: sensor.waveshare_relay_abfragen_erfolgreich
+            name: Erfolgreich
+          - entity: sensor.waveshare_relay_abfragen_fehlgeschlagen
+            name: Fehlgeschlagen
+
+      # ── Schreibvorgänge ──
+      - type: entities
+        title: Schreibvorgänge
+        show_header_toggle: false
+        entities:
+          - entity: sensor.waveshare_relay_schreibvorgange_gesamt
+            name: Gesamt
+          - entity: sensor.waveshare_relay_schreiben_erfolgreich
+            name: Erfolgreich
+          - entity: sensor.waveshare_relay_schreiben_fehlgeschlagen
+            name: Fehlgeschlagen
+
+      # ── Letzte Fehlermeldung ──
+      - type: entity
+        entity: sensor.waveshare_relay_letzte_fehlermeldung
+        name: Letzte Fehlermeldung
+        icon: mdi:message-alert
+
+      # ── Reset-Button ──
+      - type: button
+        name: Statistik zurücksetzen
+        icon: mdi:restart
+        tap_action:
+          action: call-service
+          service: waveshare_relay.statistik_zuruecksetzen
+          confirmation:
+            text: Alle Zähler und Dauer-Werte auf 0 zurücksetzen?
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # VIEW 3: Kanaldetails (Dauer & Zähler pro Relais)
+  # ═══════════════════════════════════════════════════════════════════════════
+  - title: Kanaldetails
+    path: kanaldetails
+    icon: mdi:format-list-numbered
+    cards:
+      - type: entities
+        title: "Relais 1"
+        entities:
+          - entity: switch.waveshare_relay_relais_1
+            name: Schalter
+          - entity: sensor.waveshare_relay_relais_1_einschaltdauer
+            name: Einschaltdauer
+          - entity: sensor.waveshare_relay_relais_1_ausschaltdauer
+            name: Ausschaltdauer
+          - entity: sensor.waveshare_relay_relais_1_ein_zahler
+            name: EIN-Zähler
+          - entity: sensor.waveshare_relay_relais_1_aus_zahler
+            name: AUS-Zähler
+          - entity: sensor.waveshare_relay_relais_1_schreibfehler
+            name: Schreibfehler
+
+      - type: entities
+        title: "Relais 2"
+        entities:
+          - entity: switch.waveshare_relay_relais_2
+            name: Schalter
+          - entity: sensor.waveshare_relay_relais_2_einschaltdauer
+            name: Einschaltdauer
+          - entity: sensor.waveshare_relay_relais_2_ausschaltdauer
+            name: Ausschaltdauer
+          - entity: sensor.waveshare_relay_relais_2_ein_zahler
+            name: EIN-Zähler
+          - entity: sensor.waveshare_relay_relais_2_aus_zahler
+            name: AUS-Zähler
+          - entity: sensor.waveshare_relay_relais_2_schreibfehler
+            name: Schreibfehler
+
+      - type: entities
+        title: "Relais 3"
+        entities:
+          - entity: switch.waveshare_relay_relais_3
+            name: Schalter
+          - entity: sensor.waveshare_relay_relais_3_einschaltdauer
+            name: Einschaltdauer
+          - entity: sensor.waveshare_relay_relais_3_ausschaltdauer
+            name: Ausschaltdauer
+          - entity: sensor.waveshare_relay_relais_3_ein_zahler
+            name: EIN-Zähler
+          - entity: sensor.waveshare_relay_relais_3_aus_zahler
+            name: AUS-Zähler
+          - entity: sensor.waveshare_relay_relais_3_schreibfehler
+            name: Schreibfehler
+
+      - type: entities
+        title: "Relais 4"
+        entities:
+          - entity: switch.waveshare_relay_relais_4
+            name: Schalter
+          - entity: sensor.waveshare_relay_relais_4_einschaltdauer
+            name: Einschaltdauer
+          - entity: sensor.waveshare_relay_relais_4_ausschaltdauer
+            name: Ausschaltdauer
+          - entity: sensor.waveshare_relay_relais_4_ein_zahler
+            name: EIN-Zähler
+          - entity: sensor.waveshare_relay_relais_4_aus_zahler
+            name: AUS-Zähler
+          - entity: sensor.waveshare_relay_relais_4_schreibfehler
+            name: Schreibfehler
+
+      - type: entities
+        title: "Relais 5"
+        entities:
+          - entity: switch.waveshare_relay_relais_5
+            name: Schalter
+          - entity: sensor.waveshare_relay_relais_5_einschaltdauer
+            name: Einschaltdauer
+          - entity: sensor.waveshare_relay_relais_5_ausschaltdauer
+            name: Ausschaltdauer
+          - entity: sensor.waveshare_relay_relais_5_ein_zahler
+            name: EIN-Zähler
+          - entity: sensor.waveshare_relay_relais_5_aus_zahler
+            name: AUS-Zähler
+          - entity: sensor.waveshare_relay_relais_5_schreibfehler
+            name: Schreibfehler
+
+      - type: entities
+        title: "Relais 6"
+        entities:
+          - entity: switch.waveshare_relay_relais_6
+            name: Schalter
+          - entity: sensor.waveshare_relay_relais_6_einschaltdauer
+            name: Einschaltdauer
+          - entity: sensor.waveshare_relay_relais_6_ausschaltdauer
+            name: Ausschaltdauer
+          - entity: sensor.waveshare_relay_relais_6_ein_zahler
+            name: EIN-Zähler
+          - entity: sensor.waveshare_relay_relais_6_aus_zahler
+            name: AUS-Zähler
+          - entity: sensor.waveshare_relay_relais_6_schreibfehler
+            name: Schreibfehler
+
+      - type: entities
+        title: "Relais 7"
+        entities:
+          - entity: switch.waveshare_relay_relais_7
+            name: Schalter
+          - entity: sensor.waveshare_relay_relais_7_einschaltdauer
+            name: Einschaltdauer
+          - entity: sensor.waveshare_relay_relais_7_ausschaltdauer
+            name: Ausschaltdauer
+          - entity: sensor.waveshare_relay_relais_7_ein_zahler
+            name: EIN-Zähler
+          - entity: sensor.waveshare_relay_relais_7_aus_zahler
+            name: AUS-Zähler
+          - entity: sensor.waveshare_relay_relais_7_schreibfehler
+            name: Schreibfehler
+
+      - type: entities
+        title: "Relais 8"
+        entities:
+          - entity: switch.waveshare_relay_relais_8
+            name: Schalter
+          - entity: sensor.waveshare_relay_relais_8_einschaltdauer
+            name: Einschaltdauer
+          - entity: sensor.waveshare_relay_relais_8_ausschaltdauer
+            name: Ausschaltdauer
+          - entity: sensor.waveshare_relay_relais_8_ein_zahler
+            name: EIN-Zähler
+          - entity: sensor.waveshare_relay_relais_8_aus_zahler
+            name: AUS-Zähler
+          - entity: sensor.waveshare_relay_relais_8_schreibfehler
+            name: Schreibfehler
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # VIEW 4: Funktionstest
+  # ═══════════════════════════════════════════════════════════════════════════
+  - title: Funktionstest
+    path: funktionstest
+    icon: mdi:test-tube
+    cards:
+
+      # ── Status ──
+      - type: entity
+        entity: sensor.waveshare_relay_funktionstest
+        name: Funktionstest Status
+
+      # ── Start (Standard) ──
+      - type: button
+        name: "▶ Funktionstest starten"
+        icon: mdi:play
+        icon_height: 50px
+        tap_action:
+          action: call-service
+          service: waveshare_relay.funktionstest_start
+          service_data:
+            laufzeit_s: 5
+            pause_s: 0.25
+            einmalig: true
+
+      # ── Start (Dauertest) ──
+      - type: button
+        name: "🔁 Dauertest (Endlosschleife)"
+        icon: mdi:repeat
+        icon_height: 50px
+        tap_action:
+          action: call-service
+          service: waveshare_relay.funktionstest_start
+          service_data:
+            laufzeit_s: 3
+            pause_s: 0.5
+            einmalig: false
+          confirmation:
+            text: Endlos-Funktionstest starten? Muss manuell gestoppt werden!
+
+      # ── Stop ──
+      - type: button
+        name: "⏹ Funktionstest STOP"
+        icon: mdi:stop
+        icon_height: 50px
+        tap_action:
+          action: call-service
+          service: waveshare_relay.funktionstest_stop
