@@ -9,6 +9,6 @@
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/Gr33n93/ha-waveshare-relay/issues",
   "loggers": ["pymodbus"],
-  "requirements": ["pymodbus==3.13.0"],
-  "version": "1.0.4"
+  "requirements": ["pymodbus==3.11.2"],
+  "version": "1.0.5"
 }

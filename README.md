@@ -1,85 +1,59 @@
-# Waveshare PoE Ethernet Relay (8CH) für Home Assistant
+# Waveshare PoE Ethernet Relay (8CH)
 
-Custom Integration für das Waveshare PoE Ethernet Relay Board mit 8 Kanälen.
-Die Integration steuert das Board lokal per Modbus TCP und legt die Relais als
-Home-Assistant-Entities an.
+![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5?style=for-the-badge)
+![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Custom%20Integration-18BCF2?style=for-the-badge)
+![Release](https://img.shields.io/github/v/release/Gr33n93/ha-waveshare-relay?style=for-the-badge)
 
-## Funktionen
+Home-Assistant-Integration für das Waveshare PoE Ethernet Relay Board mit 8
+Relais. Die Kommunikation läuft lokal per Modbus TCP.
 
-- 8 Relais als `switch`-Entities
-- Live-Status per Modbus FC01 Polling
-- Schalten per Modbus FC05
-- Verbindungsstatus als Diagnose-Entity
-- Statistik für Abfragen, Schreibvorgänge, Fehler und Reaktionszeit
-- Pro Kanal EIN-/AUS-Zähler und sessionbasierte EIN-/AUS-Dauer
-- Funktionstest, der alle Kanäle nacheinander schaltet
-- Service und Button für "Alle Relais aus"
+## Überblick
 
-## Installation mit HACS
+| Bereich | Funktion |
+| --- | --- |
+| Relais | 8 Schalter für die Kanäle 1 bis 8 |
+| Status | Live-Abfrage per Modbus FC01 |
+| Schalten | Relaissteuerung per Modbus FC05 |
+| Diagnose | Verbindung, Reaktionszeit, Fehler und Schreibzähler |
+| Kanäle | EIN-/AUS-Zähler und sessionbasierte Laufzeiten |
+| Wartung | Funktionstest, Statistik-Reset und "Alle Relais aus" |
 
-1. HACS in Home Assistant öffnen.
-2. **Integrations** öffnen.
-3. Über das Drei-Punkte-Menü **Custom repositories** öffnen.
-4. Repository eintragen:
+## Installation über HACS
 
-   ```text
-   https://github.com/Gr33n93/ha-waveshare-relay
-   ```
-
-5. Kategorie **Integration** wählen.
-6. Integration installieren.
-7. Home Assistant neu starten.
-
-## Manuelle Installation
-
-Den Ordner `custom_components/waveshare_relay/` in das Home-Assistant-
-Config-Verzeichnis kopieren:
+Diese Integration ist aktuell als benutzerdefiniertes HACS-Repository nutzbar.
 
 ```text
-<HA-Config>/
-  custom_components/
-    waveshare_relay/
-      __init__.py
-      binary_sensor.py
-      button.py
-      config_flow.py
-      const.py
-      coordinator.py
-      manifest.json
-      modbus_compat.py
-      sensor.py
-      services.yaml
-      strings.json
-      switch.py
-      translations/
-        de.json
+https://github.com/Gr33n93/ha-waveshare-relay
 ```
 
-Typische Pfade:
+In HACS:
 
-- HA OS / Supervised: `/config/custom_components/waveshare_relay/`
-- Docker: `<dein-config-mount>/custom_components/waveshare_relay/`
-- Home Assistant Core: `~/.homeassistant/custom_components/waveshare_relay/`
-
-Danach Home Assistant neu starten.
+1. **HACS -> Integrationen** öffnen
+2. **Custom repositories** öffnen
+3. URL eintragen
+4. Kategorie **Integration** auswählen
+5. Integration installieren
+6. Home Assistant neu starten
 
 ## Einrichtung
 
-Nach dem Neustart:
+Nach dem Neustart in Home Assistant:
 
 ```text
 Einstellungen -> Geräte & Dienste -> Integration hinzufügen -> Waveshare
 ```
 
-Konfiguration:
+Benötigte Daten:
 
-- **IP-Adresse**: IP-Adresse des Relay-Boards
-- **Port**: `502` für Modbus TCP
-- **Unit-ID**: normalerweise `1`
-- **Abfrageintervall**: Standard `2` Sekunden
+| Feld | Wert |
+| --- | --- |
+| IP-Adresse | IP-Adresse des Relay-Boards |
+| Port | `502` |
+| Unit-ID | meistens `1` |
+| Abfrageintervall | Standard `2` Sekunden |
 
-Beim Speichern wird ein Verbindungstest durchgeführt. Wenn der Test erfolgreich
-ist, werden die Entities automatisch angelegt.
+Beim Speichern führt Home Assistant einen Verbindungstest aus. Danach werden die
+Entities automatisch angelegt.
 
 ## Entities
 
@@ -87,46 +61,53 @@ ist, werden die Entities automatisch angelegt.
 | --- | ---: | --- |
 | `switch` | 8 | Relais 1 bis 8 |
 | `binary_sensor` | 1 | Verbindungsstatus |
-| `sensor` | 10 | Globale Diagnose- und Statistikwerte |
-| `sensor` | 40 | Kanalwerte für Dauer, Zähler und Schreibfehler |
-| `sensor` | 1 | Funktionstest-Status |
-| `button` | 4 | Funktionstest Start/Stop, Alle aus, Statistik zurücksetzen |
+| `sensor` | 51 | Statistik, Laufzeiten, Zähler und Teststatus |
+| `button` | 4 | Funktionstest, Alle aus, Statistik zurücksetzen |
 
 ## Services
 
 | Service | Beschreibung |
 | --- | --- |
-| `waveshare_relay.funktionstest_start` | Startet den Funktionstest |
-| `waveshare_relay.funktionstest_stop` | Stoppt den Funktionstest und schaltet alle Relais aus |
-| `waveshare_relay.statistik_zuruecksetzen` | Setzt Statistik- und Dauerwerte zurück |
-| `waveshare_relay.alle_aus` | Schaltet alle 8 Relais aus |
+| `waveshare_relay.alle_aus` | Schaltet alle Relais aus |
+| `waveshare_relay.funktionstest_start` | Startet einen Kanal-Funktionstest |
+| `waveshare_relay.funktionstest_stop` | Stoppt den Funktionstest |
+| `waveshare_relay.statistik_zuruecksetzen` | Setzt Statistikwerte zurück |
 
 Parameter für `funktionstest_start`:
 
 | Parameter | Standard | Beschreibung |
 | --- | ---: | --- |
-| `laufzeit_s` | `5` | Einschaltdauer pro Relais |
-| `pause_s` | `0.25` | Pause zwischen zwei Kanälen |
+| `laufzeit_s` | `5` | Einschaltdauer pro Kanal |
+| `pause_s` | `0.25` | Pause zwischen Kanälen |
 | `einmalig` | `true` | Ein Durchlauf oder Dauertest |
 
 ## Dashboard
 
-Die Datei `lovelace_dashboard.yaml` enthält ein Beispiel-Dashboard mit vier
-Ansichten:
+`lovelace_dashboard.yaml` enthält ein Beispiel-Dashboard mit:
 
 - Relaissteuerung
 - Statistik
 - Kanaldetails
 - Funktionstest
 
-Die Entity-IDs können je nach Home-Assistant-Instanz abweichen. Falls eine Karte
-nicht funktioniert, die tatsächlichen Entity-IDs unter **Geräte & Dienste** prüfen
-und im Dashboard-YAML anpassen.
+Die Entity-IDs können in deiner Home-Assistant-Instanz abweichen. Falls eine
+Karte nicht funktioniert, die tatsächlichen Entity-IDs unter **Geräte & Dienste**
+prüfen und im Dashboard-YAML anpassen.
+
+## Manuelle Installation
+
+Alternativ kann der Ordner manuell kopiert werden:
+
+```text
+custom_components/waveshare_relay -> /config/custom_components/waveshare_relay
+```
+
+Danach Home Assistant neu starten.
 
 ## Hinweise
 
 - Das Board erlaubt typischerweise nur eine gleichzeitige Modbus-TCP-Verbindung.
-  Andere Modbus-Adapter oder Testtools sollten nicht parallel verbunden sein.
-- Die Dauerwerte werden sessionbasiert gezählt. Nach einem Home-Assistant-Neustart
-  oder Statistik-Reset beginnen sie wieder bei `0`.
-- `pymodbus` wird automatisch über die Integration installiert.
+- Andere Modbus-Adapter oder Testtools sollten nicht parallel verbunden sein.
+- Laufzeitwerte werden sessionbasiert gezählt und nach Neustart oder Reset neu
+  begonnen.
+- `pymodbus` wird automatisch installiert.
