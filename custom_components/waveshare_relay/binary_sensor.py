@@ -11,7 +11,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, VERSION, model_name_for_relay_count
+from .const import DOMAIN, model_name_for_relay_count
 from .coordinator import WaveshareRelayCoordinator
 
 
@@ -46,7 +46,6 @@ class WaveshareConnectionSensor(
             "name": f"Waveshare Relay ({entry.data.get('host', '?')})",
             "manufacturer": "Waveshare / ZLAN",
             "model": model_name_for_relay_count(coordinator.relay_count),
-            "sw_version": VERSION,
             "configuration_url": "https://github.com/Gr33n93/ha-waveshare-relay",
         }
 

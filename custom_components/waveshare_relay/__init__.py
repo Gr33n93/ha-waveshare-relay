@@ -8,6 +8,7 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PORT, Platform
 from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.helpers import device_registry as dr
 
 from .const import (
     DOMAIN,
@@ -48,6 +49,15 @@ SERVICE_TEST_SCHEMA = vol.Schema(
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Integration einrichten wenn Config Entry geladen wird."""
     hass.data.setdefault(DOMAIN, {})
+
+    # Releases up to 1.1.5 stored the integration version as device firmware.
+    # Clear that stale value because the relay does not report its firmware.
+    device_registry = dr.async_get(hass)
+    device = device_registry.async_get_device(
+        identifiers={(DOMAIN, entry.entry_id)}
+    )
+    if device is not None and device.sw_version is not None:
+        device_registry.async_update_device(device.id, sw_version=None)
 
     coordinator = WaveshareRelayCoordinator(
         hass=hass,
