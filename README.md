@@ -124,3 +124,11 @@ Danach Home Assistant neu starten.
 - RS485/RTU-Boards wie das Modbus RTU Relay 4CH werden nicht unterstützt.
 - Die Integration nutzt die Modbus-Bibliothek, die Home Assistant über die
   eingebaute Modbus-Integration bereitstellt.
+
+## Entwicklung unterstützen
+
+Wenn dir diese Integration hilft, kannst du meine Arbeit mit einem Kaffee
+unterstützen. Dein freiwilliger Beitrag hilft bei Weiterentwicklung, Pflege und
+Tests mit echter Hardware.
+
+[☕ Auf Ko-fi unterstützen](https://ko-fi.com/nilsarnold)
