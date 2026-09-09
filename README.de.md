@@ -11,22 +11,18 @@ Kommunikation läuft lokal per Modbus TCP.
 
 ## Unterstützte Geräte
 
-| Gerät | Relais |
-| --- | ---: |
-| Modbus POE ETH Relay | 8 |
-| Modbus POE ETH Relay 16CH | 16 |
-| Modbus POE ETH Relay 30CH | 30 |
+- **Modbus POE ETH Relay:** 8 Relais
+- **Modbus POE ETH Relay 16CH:** 16 Relais
+- **Modbus POE ETH Relay 30CH:** 30 Relais
 
 ## Überblick
 
-| Bereich | Funktion |
-| --- | --- |
-| Relais | Schalter für alle konfigurierten Kanäle |
-| Status | Live-Abfrage per Modbus FC01 |
-| Schalten | Relaissteuerung per Modbus FC05 |
-| Diagnose | Verbindung, Reaktionszeit, Fehler und Schreibzähler |
-| Kanäle | EIN-/AUS-Zähler und sessionbasierte Laufzeiten |
-| Wartung | Funktionstest, Statistik-Reset und "Alle Relais aus" |
+- **Relais:** Schalter für alle konfigurierten Kanäle
+- **Status:** Live-Abfrage per Modbus FC01
+- **Schalten:** Relaissteuerung per Modbus FC05
+- **Diagnose:** Verbindung, Reaktionszeit, Fehler und Schreibzähler
+- **Kanäle:** EIN-/AUS-Zähler und sessionbasierte Laufzeiten
+- **Wartung:** Funktionstest, Statistik-Reset und „Alle Relais aus“
 
 ## Installation über HACS
 
@@ -57,42 +53,36 @@ Einstellungen -> Geräte & Dienste -> Integration hinzufügen -> Waveshare
 
 Benötigte Daten:
 
-| Feld | Wert |
-| --- | --- |
-| IP-Adresse | IP-Adresse des Relay-Boards |
-| Port | `502` |
-| Unit-ID | meistens `1` |
-| Abfrageintervall | Standard `2` Sekunden |
-| Relaisanzahl | `8`, `16` oder `30` |
+- **IP-Adresse:** IP-Adresse des Relay-Boards
+- **Port:** `502`
+- **Unit-ID:** meistens `1`
+- **Abfrageintervall:** Standard `2` Sekunden
+- **Relaisanzahl:** `8`, `16` oder `30`
 
 Beim Speichern führt Home Assistant einen Verbindungstest aus. Danach werden die
 Entities automatisch angelegt.
 
 ## Entities
 
-| Typ | Anzahl | Beschreibung |
-| --- | ---: | --- |
-| `switch` | Relaisanzahl | Ein Schalter pro Relais |
-| `binary_sensor` | 1 | Verbindungsstatus |
-| `sensor` | 11 + 5 pro Relais | Statistik, Laufzeiten, Zähler und Teststatus |
-| `button` | 4 | Funktionstest, Alle aus, Statistik zurücksetzen |
+- **`switch`:** ein Schalter pro Relais
+- **`binary_sensor`:** eine Entity für den Verbindungsstatus
+- **`sensor`:** 11 allgemeine Entities plus 5 pro Relais für Statistik,
+  Laufzeiten, Zähler und Teststatus
+- **`button`:** 4 Entities für Funktionstests, „Alle Relais aus“ und das
+  Zurücksetzen der Statistik
 
 ## Services
 
-| Service | Beschreibung |
-| --- | --- |
-| `waveshare_relay.alle_aus` | Schaltet alle Relais aus |
-| `waveshare_relay.funktionstest_start` | Startet einen Kanal-Funktionstest |
-| `waveshare_relay.funktionstest_stop` | Stoppt den Funktionstest |
-| `waveshare_relay.statistik_zuruecksetzen` | Setzt Statistikwerte zurück |
+- **`waveshare_relay.alle_aus`:** schaltet alle Relais aus
+- **`waveshare_relay.funktionstest_start`:** startet einen Kanal-Funktionstest
+- **`waveshare_relay.funktionstest_stop`:** stoppt den Funktionstest
+- **`waveshare_relay.statistik_zuruecksetzen`:** setzt Statistikwerte zurück
 
 Parameter für `funktionstest_start`:
 
-| Parameter | Standard | Beschreibung |
-| --- | ---: | --- |
-| `laufzeit_s` | `5` | Einschaltdauer pro Kanal |
-| `pause_s` | `0.25` | Pause zwischen Kanälen |
-| `einmalig` | `true` | Ein Durchlauf oder Dauertest |
+- **`laufzeit_s`** (Standard: `5`): Einschaltdauer pro Kanal
+- **`pause_s`** (Standard: `0.25`): Pause zwischen Kanälen
+- **`einmalig`** (Standard: `true`): ein Durchlauf oder Dauertest
 
 ## Dashboard
 

@@ -11,22 +11,18 @@ communication takes place locally over Modbus TCP.
 
 ## Supported devices
 
-| Device | Relays |
-| --- | ---: |
-| Modbus POE ETH Relay | 8 |
-| Modbus POE ETH Relay 16CH | 16 |
-| Modbus POE ETH Relay 30CH | 30 |
+- **Modbus POE ETH Relay:** 8 relays
+- **Modbus POE ETH Relay 16CH:** 16 relays
+- **Modbus POE ETH Relay 30CH:** 30 relays
 
 ## Overview
 
-| Area | Function |
-| --- | --- |
-| Relays | Switches for all configured channels |
-| Status | Live polling over Modbus FC01 |
-| Control | Relay control over Modbus FC05 |
-| Diagnostics | Connection, response time, errors, and write counters |
-| Channels | On/off counters and session-based runtimes |
-| Maintenance | Function test, statistics reset, and "All relays off" |
+- **Relays:** Switches for all configured channels
+- **Status:** Live polling over Modbus FC01
+- **Control:** Relay control over Modbus FC05
+- **Diagnostics:** Connection, response time, errors, and write counters
+- **Channels:** On/off counters and session-based runtimes
+- **Maintenance:** Function test, statistics reset, and "All relays off"
 
 ## Installation through HACS
 
@@ -57,42 +53,36 @@ Settings -> Devices & services -> Add integration -> Waveshare
 
 Required information:
 
-| Field | Value |
-| --- | --- |
-| IP address | IP address of the relay board |
-| Port | `502` |
-| Unit ID | Usually `1` |
-| Polling interval | Default: `2` seconds |
-| Number of relays | `8`, `16`, or `30` |
+- **IP address:** IP address of the relay board
+- **Port:** `502`
+- **Unit ID:** Usually `1`
+- **Polling interval:** Default: `2` seconds
+- **Number of relays:** `8`, `16`, or `30`
 
 Home Assistant tests the connection when you save the configuration. It then
 creates the entities automatically.
 
 ## Entities
 
-| Type | Number | Description |
-| --- | ---: | --- |
-| `switch` | Number of relays | One switch per relay |
-| `binary_sensor` | 1 | Connection status |
-| `sensor` | 11 + 5 per relay | Statistics, runtimes, counters, and test status |
-| `button` | 4 | Function test, all off, and statistics reset |
+- **`switch`:** One switch per relay
+- **`binary_sensor`:** One connection-status entity
+- **`sensor`:** 11 general entities plus 5 per relay for statistics,
+  runtimes, counters, and test status
+- **`button`:** 4 entities for function tests, switching all relays off, and
+  resetting statistics
 
 ## Services
 
-| Service | Description |
-| --- | --- |
-| `waveshare_relay.alle_aus` | Turns off all relays |
-| `waveshare_relay.funktionstest_start` | Starts a channel function test |
-| `waveshare_relay.funktionstest_stop` | Stops the function test |
-| `waveshare_relay.statistik_zuruecksetzen` | Resets statistics |
+- **`waveshare_relay.alle_aus`:** Turns off all relays
+- **`waveshare_relay.funktionstest_start`:** Starts a channel function test
+- **`waveshare_relay.funktionstest_stop`:** Stops the function test
+- **`waveshare_relay.statistik_zuruecksetzen`:** Resets statistics
 
 Parameters for `funktionstest_start`:
 
-| Parameter | Default | Description |
-| --- | ---: | --- |
-| `laufzeit_s` | `5` | On duration per channel |
-| `pause_s` | `0.25` | Pause between channels |
-| `einmalig` | `true` | Single run or continuous test |
+- **`laufzeit_s`** (default: `5`): On duration per channel
+- **`pause_s`** (default: `0.25`): Pause between channels
+- **`einmalig`** (default: `true`): Single run or continuous test
 
 ## Dashboard
 
