@@ -89,7 +89,7 @@ class WaveshareRelaySwitch(CoordinatorEntity[WaveshareRelayCoordinator], SwitchE
             "aus_zaehler": cs["aus_zaehler"],
             "schreibfehler": cs["schreibfehler"],
             "letzter_befehl": cs["letzter_befehl"],
-            "betriebsart": "impuls" if config.mode == ChannelMode.PULSE else "dauerbetrieb",
+            "betriebsart": "pulse" if config.mode == ChannelMode.PULSE else "switch",
         }
         if config.mode == ChannelMode.PULSE:
             attrs["impulsdauer_ms"] = config.pulse_duration_ms

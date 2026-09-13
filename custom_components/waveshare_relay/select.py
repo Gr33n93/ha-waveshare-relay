@@ -25,10 +25,10 @@ from .models import ChannelMode
 
 _LOGGER = logging.getLogger(__name__)
 
-# Anzeigetexte der Auswahl -> kanonischer Modus
+# Anzeigetexte der Auswahl -> kanonischer Modus (gespeichert bleibt switch/pulse)
 MODE_LABELS = {
-    "Dauerbetrieb": ChannelMode.SWITCH,
-    "Impuls": ChannelMode.PULSE,
+    "Switch": ChannelMode.SWITCH,
+    "Pulse": ChannelMode.PULSE,
 }
 MODE_TO_LABEL = {mode: label for label, mode in MODE_LABELS.items()}
 
@@ -62,7 +62,7 @@ def _device_info(entry: ConfigEntry, coordinator: WaveshareRelayCoordinator) -> 
 class WaveshareChannelModeSelect(
     CoordinatorEntity[WaveshareRelayCoordinator], SelectEntity
 ):
-    """Betriebsart eines Kanals: Dauerbetrieb oder Impuls."""
+    """Betriebsart eines Kanals: Switch (Dauerbetrieb) oder Pulse (Impuls)."""
 
     _attr_has_entity_name = True
     _attr_icon = "mdi:tune-variant"
@@ -77,7 +77,7 @@ class WaveshareChannelModeSelect(
         self._channel = channel
         self._entry = entry
         self._attr_unique_id = f"{entry.entry_id}_relay_{channel + 1}_mode"
-        self._attr_name = f"{coordinator.relay_names[channel]} Betriebsart"
+        self._attr_name = f"{coordinator.relay_names[channel]} Mode"
         self._attr_device_info = _device_info(entry, coordinator)
 
     @property

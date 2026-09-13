@@ -88,33 +88,33 @@ views:
             tap_action:
               action: toggle
 
-      # ── Betriebsart pro Kanal (Dauerbetrieb/Impuls) ──
+      # ── Betriebsart pro Kanal (Switch/Pulse) ──
       - type: entities
-        title: Betriebsart (Dauerbetrieb/Impuls)
+        title: Mode (Switch/Pulse)
         show_header_toggle: false
         entities:
-          - entity: select.waveshare_relay_relais_1_betriebsart
+          - entity: select.waveshare_relay_relais_1_mode
             name: Relais 1
             icon: mdi:tune-variant
-          - entity: select.waveshare_relay_relais_2_betriebsart
+          - entity: select.waveshare_relay_relais_2_mode
             name: Relais 2
             icon: mdi:tune-variant
-          - entity: select.waveshare_relay_relais_3_betriebsart
+          - entity: select.waveshare_relay_relais_3_mode
             name: Relais 3
             icon: mdi:tune-variant
-          - entity: select.waveshare_relay_relais_4_betriebsart
+          - entity: select.waveshare_relay_relais_4_mode
             name: Relais 4
             icon: mdi:tune-variant
-          - entity: select.waveshare_relay_relais_5_betriebsart
+          - entity: select.waveshare_relay_relais_5_mode
             name: Relais 5
             icon: mdi:tune-variant
-          - entity: select.waveshare_relay_relais_6_betriebsart
+          - entity: select.waveshare_relay_relais_6_mode
             name: Relais 6
             icon: mdi:tune-variant
-          - entity: select.waveshare_relay_relais_7_betriebsart
+          - entity: select.waveshare_relay_relais_7_mode
             name: Relais 7
             icon: mdi:tune-variant
-          - entity: select.waveshare_relay_relais_8_betriebsart
+          - entity: select.waveshare_relay_relais_8_mode
             name: Relais 8
             icon: mdi:tune-variant
 

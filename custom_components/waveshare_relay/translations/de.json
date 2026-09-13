@@ -32,10 +32,10 @@
       },
       "channel": {
         "title": "Kanal {channel_number} konfigurieren",
-        "description": "Betriebsart des Kanals festlegen. Im Impulsmodus löst das Einschalten einen nativen Board-Impuls aus; das Board schaltet selbstständig zurück. Die Entity-ID bleibt unverändert.",
+        "description": "Betriebsart des Kanals festlegen. Im Modus „Pulse“ löst das Einschalten einen nativen Board-Impuls aus; das Board schaltet selbstständig zurück. Die Entity-ID bleibt unverändert.",
         "data": {
           "channel_name": "Anzeigename",
-          "betriebsart": "Betriebsart",
+          "betriebsart": "Betriebsart (Switch/Pulse)",
           "impulsdauer_ms": "Impulsdauer (ms)"
         }
       }

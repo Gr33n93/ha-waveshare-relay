@@ -157,7 +157,7 @@ class WaveshareRelayOptionsFlowHandler(config_entries.OptionsFlow):
         coordinator = self.hass.data[DOMAIN][self.config_entry.entry_id]
         choices = []
         for cfg in coordinator.channel_configs:
-            art = "Impuls" if cfg.mode == ChannelMode.PULSE else "Dauerbetrieb"
+            art = "Pulse" if cfg.mode == ChannelMode.PULSE else "Switch"
             choices.append(
                 SelectOptionDict(
                     value=str(cfg.channel),
@@ -205,8 +205,8 @@ class WaveshareRelayOptionsFlowHandler(config_entries.OptionsFlow):
                     ): SelectSelector(
                         SelectSelectorConfig(
                             options=[
-                                SelectOptionDict(value=MODE_SWITCH, label="Dauerbetrieb"),
-                                SelectOptionDict(value=MODE_PULSE, label="Impuls"),
+                                SelectOptionDict(value=MODE_SWITCH, label="Switch"),
+                                SelectOptionDict(value=MODE_PULSE, label="Pulse"),
                             ]
                         )
                     ),

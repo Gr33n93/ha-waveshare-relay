@@ -73,16 +73,16 @@ Entities automatisch angelegt.
 | `sensor` | 11 + 5 pro Relais | Statistik, Laufzeiten, Zähler und Teststatus |
 | `button` | 4 | Funktionstest, Alle aus, Statistik zurücksetzen |
 
-## Betriebsart pro Kanal (Dauerbetrieb / Impuls)
+## Betriebsart pro Kanal (Switch / Pulse)
 
 Jeder Kanal ist über die Integrationsoptionen (**Geräte & Dienste → Waveshare
-Relay → Optionen**) einzeln konfigurierbar: Anzeigename, Betriebsart und
-Impulsdauer.
+Relay → Konfigurieren**) oder direkt per Betriebsart-Select einzeln
+konfigurierbar: Anzeigename, Betriebsart und Impulsdauer.
 
-- **Dauerbetrieb:** normales Ein-/Ausschalten, die Entity zeigt den echten
-  Boardzustand.
-- **Impuls:** Das Einschalten löst den nativen Waveshare-Impulsbefehl aus
-  (Modbus FC05 an Adresse `0x0200 + Kanal`, Zeit in 100-ms-Schritten). Das
+- **Switch** (Dauerbetrieb): normales Ein-/Ausschalten, die Entity zeigt den
+  echten Boardzustand.
+- **Pulse** (Impuls): Das Einschalten löst den nativen Waveshare-Impulsbefehl
+  aus (Modbus FC05 an Adresse `0x0200 + Kanal`, Zeit in 100-ms-Schritten). Das
   Board schaltet nach der eingestellten Dauer selbstständig zurück – auch
   wenn Home Assistant in der Zwischenzeit nicht erreichbar ist. Gedacht für
   bistabile Relais bzw. Stromstoßschalter. Der Ausschalter beendet einen
@@ -90,17 +90,17 @@ Impulsdauer.
 
 Der Moduswechsel ändert weder Name noch Entity-ID noch Unique-ID –
 Dashboards und Automationen bleiben beim Umschalten unverändert. Zusätzliche
-Attribute (`betriebsart`, `impulsdauer_ms`, `letzter_impuls`) zeigen die
-aktuelle Konfiguration.
+Attribute (`betriebsart` mit `switch`/`pulse`, `impulsdauer_ms`,
+`letzter_impuls`) zeigen die aktuelle Konfiguration.
 
 ### Betriebsart direkt am Gerät / Dashboard
 
 Zusätzlich zum OptionsDialog gibt es pro Kanal eine Select-Entity
-(`select.*_betriebsart`), mit der sich Dauerbetrieb/Impuls direkt umstellen
-lässt – auf der Geräteseite unter **Steuerung** direkt neben dem Kanal oder
-als Karte im Dashboard (Beispiel in `lovelace_dashboard.yaml`). Eine
-Umstellung über die Select-Entity wirkt identisch zum OptionsDialog: sie
-wird gespeichert und überlebt Neustarts.
+(`select.*_mode`, angezeigt als „Relais N Mode“), mit der sich Switch/Pulse
+direkt umstellen lässt – auf der Geräteseite unter **Steuerung** direkt neben
+dem Kanal oder als Karte im Dashboard (Beispiel in
+`lovelace_dashboard.yaml`). Eine Umstellung über die Select-Entity wirkt
+identisch zum OptionsDialog: sie wird gespeichert und überlebt Neustarts.
 
 ## Services
 
