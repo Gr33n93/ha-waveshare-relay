@@ -1,8 +1,8 @@
 """Select-Plattform: Modus pro Kanal (Switch/Pulse).
 
-Pro Kanal gibt es eine Modus-Auswahl, die am Gerät im Konfigurations-Abschnitt
-steht (Steuerung zeigt nur die Relais-Schalter) und sich per Dashboard-Karte
-bedienen lässt – derselbe Mechanismus wie im OptionsDialog.
+Pro Kanal gibt es eine Modus-Auswahl, die standardmäßig aktiv ist und am
+Gerät in der Steuerung direkt neben den Relais-Schaltern steht – derselbe
+Mechanismus wie im OptionsDialog.
 """
 from __future__ import annotations
 
@@ -10,7 +10,6 @@ import logging
 
 from homeassistant.components.select import SelectEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -66,7 +65,6 @@ class WaveshareChannelModeSelect(
     """Betriebsart eines Kanals: Switch (Dauerbetrieb) oder Pulse (Impuls)."""
 
     _attr_has_entity_name = True
-    _attr_entity_category = EntityCategory.CONFIG
     _attr_icon = "mdi:tune-variant"
 
     def __init__(

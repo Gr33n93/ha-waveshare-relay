@@ -69,7 +69,7 @@ Entities automatisch angelegt.
 | Typ | Anzahl | Beschreibung |
 | --- | ---: | --- |
 | `switch` | Relaisanzahl | Ein Schalter pro Relais (Modus: Switch oder Pulse) |
-| `select` | Relaisanzahl | Mode-Auswahl (Switch/Pulse), am Gerät unter Konfiguration |
+| `select` | Relaisanzahl | Mode-Auswahl (Switch/Pulse), in der Steuerung direkt beim Kanal |
 | `binary_sensor` | 1 | Verbindungsstatus |
 | `sensor` | 11 + 5 pro Relais | Board-Statistik; die 5 Statistik-Sensoren pro Kanal sind standardmäßig deaktiviert (Werte stehen auch als Attribute am Schalter) |
 | `button` | 4 | Funktionstest, Alle aus, Statistik zurücksetzen |
@@ -98,8 +98,8 @@ Attribute (`betriebsart` mit `switch`/`pulse`, `impulsdauer_ms`,
 
 Zusätzlich zum OptionsDialog gibt es pro Kanal eine Select-Entity
 (`select.*_mode`, angezeigt als „Relais N Mode“), mit der sich Switch/Pulse
-direkt umstellen lässt – auf der Geräteseite im Abschnitt **Konfiguration**
-oder als Karte im Dashboard (Beispiel in
+direkt umstellen lässt – auf der Geräteseite in der **Steuerung** direkt beim
+jeweiligen Kanal oder als Karte im Dashboard (Beispiel in
 `lovelace_dashboard.yaml`). Eine Umstellung über die Select-Entity wirkt
 identisch zum OptionsDialog: sie wird gespeichert und überlebt Neustarts.
 
