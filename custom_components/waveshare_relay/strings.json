@@ -20,5 +20,25 @@
     "abort": {
       "already_configured": "Dieses Board ist bereits konfiguriert."
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Waveshare Relay konfigurieren",
+        "description": "Kanal auswählen, der bearbeitet werden soll. Die Betriebsart lässt sich jederzeit wechseln – Name und Entity-ID bleiben erhalten.",
+        "data": {
+          "channel": "Kanal"
+        }
+      },
+      "channel": {
+        "title": "Kanal {channel_number} konfigurieren",
+        "description": "Betriebsart des Kanals festlegen. Im Impulsmodus löst das Einschalten einen nativen Board-Impuls aus; das Board schaltet selbstständig zurück. Die Entity-ID bleibt unverändert.",
+        "data": {
+          "channel_name": "Anzeigename",
+          "betriebsart": "Betriebsart",
+          "impulsdauer_ms": "Impulsdauer (ms)"
+        }
+      }
+    }
   }
 }

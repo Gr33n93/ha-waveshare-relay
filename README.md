@@ -68,10 +68,30 @@ Entities automatisch angelegt.
 
 | Typ | Anzahl | Beschreibung |
 | --- | ---: | --- |
-| `switch` | Relaisanzahl | Ein Schalter pro Relais |
+| `switch` | Relaisanzahl | Ein Schalter pro Relais (Betriebsart: Dauerbetrieb oder Impuls) |
 | `binary_sensor` | 1 | Verbindungsstatus |
 | `sensor` | 11 + 5 pro Relais | Statistik, Laufzeiten, Zähler und Teststatus |
 | `button` | 4 | Funktionstest, Alle aus, Statistik zurücksetzen |
+
+## Betriebsart pro Kanal (Dauerbetrieb / Impuls)
+
+Jeder Kanal ist über die Integrationsoptionen (**Geräte & Dienste → Waveshare
+Relay → Optionen**) einzeln konfigurierbar: Anzeigename, Betriebsart und
+Impulsdauer.
+
+- **Dauerbetrieb:** normales Ein-/Ausschalten, die Entity zeigt den echten
+  Boardzustand.
+- **Impuls:** Das Einschalten löst den nativen Waveshare-Impulsbefehl aus
+  (Modbus FC05 an Adresse `0x0200 + Kanal`, Zeit in 100-ms-Schritten). Das
+  Board schaltet nach der eingestellten Dauer selbstständig zurück – auch
+  wenn Home Assistant in der Zwischenzeit nicht erreichbar ist. Gedacht für
+  bistabile Relais bzw. Stromstoßschalter. Der Ausschalter beendet einen
+  laufenden Impuls sicher.
+
+Der Moduswechsel ändert weder Name noch Entity-ID noch Unique-ID –
+Dashboards und Automationen bleiben beim Umschalten unverändert. Zusätzliche
+Attribute (`betriebsart`, `impulsdauer_ms`, `letzter_impuls`) zeigen die
+aktuelle Konfiguration.
 
 ## Services
 
@@ -82,6 +102,10 @@ Entities automatisch angelegt.
 | `waveshare_relay.funktionstest_stop` | Stoppt den Funktionstest |
 | `waveshare_relay.statistik_zuruecksetzen` | Setzt Statistikwerte zurück |
 
+Alle Services akzeptieren optional ein **Zielgerät** (Geräteselector). Ohne
+Auswahl wirken sie auf alle konfigurierten Boards – bestehende Automationen
+verhalten sich weiterhin wie bisher.
+
 Parameter für `funktionstest_start`:
 
 | Parameter | Standard | Beschreibung |
@@ -89,6 +113,11 @@ Parameter für `funktionstest_start`:
 | `laufzeit_s` | `5` | Einschaltdauer pro Kanal |
 | `pause_s` | `0.25` | Pause zwischen Kanälen |
 | `einmalig` | `true` | Ein Durchlauf oder Dauertest |
+| `device_id` | – | Optional: Board, auf dem der Test läuft |
+
+Während eines Funktionstests sind manuelle Schaltbefehle gesperrt, damit sie
+sich nicht mit dem Testablauf überlagern. `alle_aus` bleibt als
+Sicherheitsstopp jederzeit verfügbar.
 
 ## Dashboard
 

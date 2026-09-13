@@ -2,7 +2,7 @@ funktionstest_start:
   name: Funktionstest starten
   description: >
     Startet einen One-Hot-Funktionstest: Jeder Kanal wird nacheinander ein-
-    und wieder ausgeschaltet.
+    und wieder ausgeschaltet. Ohne Geräteauswahl laufen alle Boards.
   fields:
     laufzeit_s:
       name: Laufzeit pro Kanal (s)
@@ -35,15 +35,58 @@ funktionstest_start:
       default: true
       selector:
         boolean:
+    device_id:
+      name: Gerät
+      description: >
+        Board, auf dem der Test läuft. Leer lassen für alle Boards.
+        Während des Tests sind manuelle Schaltbefehle gesperrt.
+      required: false
+      selector:
+        device:
+          filter:
+            - integration: waveshare_relay
 
 funktionstest_stop:
   name: Funktionstest stoppen
-  description: Stoppt einen laufenden Funktionstest und schaltet alle Relais aus.
+  description: >
+    Stoppt einen laufenden Funktionstest und schaltet alle Relais aus.
+    Ohne Geräteauswahl auf allen Boards.
+  fields:
+    device_id:
+      name: Gerät
+      description: Board, dessen Test gestoppt wird. Leer lassen für alle Boards.
+      required: false
+      selector:
+        device:
+          filter:
+            - integration: waveshare_relay
 
 statistik_zuruecksetzen:
   name: Statistik zurücksetzen
-  description: Setzt alle Zähler und Dauer-Werte auf 0 zurück.
+  description: >
+    Setzt alle Zähler und Dauer-Werte auf 0 zurück.
+    Ohne Geräteauswahl auf allen Boards.
+  fields:
+    device_id:
+      name: Gerät
+      description: Board, dessen Statistik zurückgesetzt wird. Leer lassen für alle Boards.
+      required: false
+      selector:
+        device:
+          filter:
+            - integration: waveshare_relay
 
 alle_aus:
   name: Alle Relais aus
-  description: Schaltet alle Relais des konfigurierten Boards sofort aus.
+  description: >
+    Schaltet alle Relais sofort aus. Ohne Geräteauswahl auf allen Boards.
+    Bleibt auch während eines Funktionstests verfügbar (Sicherheitsstopp).
+  fields:
+    device_id:
+      name: Gerät
+      description: Board, das ausgeschaltet wird. Leer lassen für alle Boards.
+      required: false
+      selector:
+        device:
+          filter:
+            - integration: waveshare_relay

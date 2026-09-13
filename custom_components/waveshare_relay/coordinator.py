@@ -13,10 +13,12 @@ from pymodbus.exceptions import ModbusException
 
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .const import DOMAIN, DEFAULT_POLL_INTERVAL, DEFAULT_RELAY_COUNT
-from .modbus_compat import read_coils_compat, write_coil_compat
+from .const import DOMAIN, DEFAULT_POLL_INTERVAL, DEFAULT_RELAY_COUNT, PULSE_ADDR_ON
+from .modbus_compat import read_coils_compat, write_coil_compat, write_pulse_compat
+from .models import ChannelConfig, default_channel_configs
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -32,7 +34,7 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
         unit_id: int,
         poll_interval: int = DEFAULT_POLL_INTERVAL,
         relay_count: int = DEFAULT_RELAY_COUNT,
-        relay_names: list[str] | None = None,
+        channel_configs: list[ChannelConfig] | None = None,
     ) -> None:
         super().__init__(
             hass,
@@ -44,12 +46,17 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
         self.port = port
         self.unit_id = unit_id
         self.relay_count = relay_count
-        self.relay_names = relay_names or [
-            f"Relais {i}" for i in range(1, self.relay_count + 1)
-        ]
+        # Fehlende Profile mit Dauerbetrieb-Standards auffüllen, damit die
+        # Liste immer relay_count Einträge hat.
+        configs = list(channel_configs) if channel_configs else []
+        if len(configs) < relay_count:
+            configs.extend(default_channel_configs(relay_count)[len(configs):])
+        self.channel_configs = configs
+        self.relay_names = [c.name for c in self.channel_configs]
 
         self._client: AsyncModbusTcpClient | None = None
         self._lock = asyncio.Lock()
+        self._pulse_timers: dict[int, Any] = {}
 
         self.relay_states: list[bool] = [False] * self.relay_count
 
@@ -74,6 +81,7 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
                 "aus_zaehler": 0,
                 "schreibfehler": 0,
                 "letzter_befehl": "",
+                "letzter_impuls": "",
                 "zustand": False,
                 "letzter_wechsel": None,
                 "einschaltdauer_s": 0.0,
@@ -110,6 +118,9 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
 
     async def async_shutdown(self) -> None:
         await self.async_stop_test()
+        for cancel in self._pulse_timers.values():
+            cancel()
+        self._pulse_timers.clear()
         if self._client:
             self._client.close()
             self._client = None
@@ -190,9 +201,22 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
 
     # ─────────────── Modbus Schreiben (FC05) ───────────────
 
+    def _ensure_write_allowed(self, source: str) -> None:
+        """Manuelle Befehle während des Funktionstests ablehnen.
+
+        Nur der Test selbst und Alle-Aus (Sicherheitsstopp) sind erlaubt,
+        damit sich manuelle Schaltvorgänge nicht mit dem Testablauf überlagern.
+        """
+        if self.test_running and source not in ("Funktionstest", "alle_aus"):
+            raise HomeAssistantError(
+                "Funktionstest läuft – manuelle Schaltbefehle werden solange "
+                "abgelehnt (Alle-Aus bleibt möglich)."
+            )
+
     async def async_write_coil(
         self, channel: int, value: bool, source: str = "manuell"
     ) -> None:
+        self._ensure_write_allowed(source)
         self.stats["schreibvorgaenge_gesamt"] += 1
         cs = self.channel_stats[channel]
         try:
@@ -226,6 +250,62 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
             _LOGGER.error("Schreiben Kanal %d fehlgeschlagen: %s", channel + 1, err)
             raise
 
+    async def async_pulse(
+        self, channel: int, duration_ms: int, source: str = "HA-UI"
+    ) -> None:
+        """Nativen Waveshare-Impuls auslösen; das Board schaltet selbst zurück."""
+        self._ensure_write_allowed(source)
+        self.stats["schreibvorgaenge_gesamt"] += 1
+        cs = self.channel_stats[channel]
+        try:
+            async with self._lock:
+                client = await self._ensure_connected()
+                result = await write_pulse_compat(
+                    client,
+                    address=PULSE_ADDR_ON + channel,
+                    duration_ms=duration_ms,
+                    unit_id=self.unit_id,
+                )
+            if result.isError():
+                raise ModbusException(
+                    f"Impuls-Fehler Kanal {channel + 1}: {result}"
+                )
+
+            self.stats["schreiben_ok"] += 1
+            self.stats["letzter_erfolg_zeit"] = _iso_now()
+            cs["ein_zaehler"] += 1
+            cs["letzter_befehl"] = f"{_iso_now()} ({source})"
+            cs["letzter_impuls"] = _iso_now()
+
+            # Optimistisch einschalten; nach Ablauf des Impulsfensters erneut
+            # lesen – das Board hat dann bereits selbstständig ausgeschaltet.
+            self._apply_relay_state(channel, True)
+            self.async_set_updated_data(
+                {"relay_states": self.relay_states, "stats": self.stats}
+            )
+            self._schedule_pulse_refresh(channel, duration_ms)
+        except Exception as err:
+            self.stats["schreiben_fehler"] += 1
+            cs["schreibfehler"] += 1
+            self.stats["letzte_fehlermeldung"] = str(err)
+            self.stats["letzter_fehler_zeit"] = _iso_now()
+            _LOGGER.error("Impuls Kanal %d fehlgeschlagen: %s", channel + 1, err)
+            raise
+
+    def _schedule_pulse_refresh(self, channel: int, duration_ms: int) -> None:
+        """Nach dem Impulsfenster den Boardzustand erneut abfragen."""
+        old = self._pulse_timers.pop(channel, None)
+        if old is not None:
+            old()
+
+        async def _refresh(now: Any) -> None:
+            self._pulse_timers.pop(channel, None)
+            await self.async_request_refresh()
+
+        self._pulse_timers[channel] = async_call_later(
+            self.hass, (duration_ms + 300) / 1000, _refresh
+        )
+
     async def async_all_off(self) -> None:
         errors: list[str] = []
         for ch in range(self.relay_count):
@@ -251,14 +331,20 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
             _LOGGER.warning("Funktionstest läuft bereits")
             return
         self.test_stop = False
-        self._test_task = self.hass.async_create_task(
-            self._run_test(laufzeit_s, pause_s, einmalig)
-        )
+        # Synchron setzen, bevor der Task existiert – sonst könnten zwei
+        # nahezu gleichzeitige Starts zwei Tests erzeugen.
+        self.test_running = True
+        try:
+            self._test_task = self.hass.async_create_task(
+                self._run_test(laufzeit_s, pause_s, einmalig)
+            )
+        except Exception:
+            self.test_running = False
+            raise
 
     async def _run_test(
         self, laufzeit_s: float, pause_s: float, einmalig: bool
     ) -> None:
-        self.test_running = True
         self.test_current_channel = 0
         _LOGGER.info(
             "Funktionstest gestartet: Laufzeit=%.1fs, Pause=%.2fs, Einmalig=%s",
@@ -307,6 +393,10 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
             with suppress(asyncio.CancelledError):
                 await task
         self._test_task = None
+        # Auch ein Task, der vor seinem ersten Schritt abgebrochen wurde,
+        # darf den Test-Flag nicht dauerhaft setzen (sonst kein Neustart mehr).
+        self.test_running = False
+        self.test_current_channel = 0
 
     # ─────────────── Statistik zurücksetzen ───────────────
 
@@ -326,6 +416,7 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
             cs["aus_zaehler"] = 0
             cs["schreibfehler"] = 0
             cs["letzter_befehl"] = ""
+            cs["letzter_impuls"] = ""
             cs["zustand"] = self.relay_states[index]
             cs["einschaltdauer_s"] = 0.0
             cs["ausschaltdauer_s"] = 0.0

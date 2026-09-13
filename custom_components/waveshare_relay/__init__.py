@@ -8,6 +8,7 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PORT, Platform
 from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import device_registry as dr
 
 from .const import (
@@ -23,6 +24,7 @@ from .const import (
     SERVICE_ALL_OFF,
 )
 from .coordinator import WaveshareRelayCoordinator
+from .models import channel_configs_from_entry
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -59,13 +61,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if device is not None and device.sw_version is not None:
         device_registry.async_update_device(device.id, sw_version=None)
 
+    relay_count = entry.data.get(CONF_RELAY_COUNT, DEFAULT_RELAY_COUNT)
     coordinator = WaveshareRelayCoordinator(
         hass=hass,
         host=entry.data[CONF_HOST],
         port=entry.data[CONF_PORT],
         unit_id=entry.data[CONF_UNIT_ID],
         poll_interval=entry.data.get(CONF_POLL_INTERVAL, DEFAULT_POLL_INTERVAL),
-        relay_count=entry.data.get(CONF_RELAY_COUNT, DEFAULT_RELAY_COUNT),
+        relay_count=relay_count,
+        channel_configs=channel_configs_from_entry(entry.options, relay_count),
     )
 
     await coordinator.async_config_entry_first_refresh()
@@ -74,10 +78,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
-    # Services nur einmal global registrieren (wirken auf alle Geräte)
+    # Services nur einmal global registrieren (Ziel optional wählbar)
     _register_services(hass)
 
+    # Optionsänderungen (Kanalprofile) laden den Entry neu
+    entry.async_on_unload(
+        entry.add_update_listener(_async_update_listener)
+    )
+
     return True
+
+
+async def _async_update_listener(
+    hass: HomeAssistant, entry: ConfigEntry
+) -> None:
+    """Entry bei geänderten Optionen neu laden."""
+    await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -102,14 +118,38 @@ def _get_all_coordinators(hass: HomeAssistant) -> list[WaveshareRelayCoordinator
     return list(hass.data.get(DOMAIN, {}).values())
 
 
+def _resolve_coordinators(
+    hass: HomeAssistant, call: ServiceCall
+) -> list[WaveshareRelayCoordinator]:
+    """Coordinators des Aufrufs ermitteln: Zielgerät oder alle Boards."""
+    device_id = call.data.get("device_id")
+    if not device_id:
+        return _get_all_coordinators(hass)
+
+    device = dr.async_get(hass).async_get(device_id)
+    if device is None:
+        raise HomeAssistantError(f"Gerät {device_id} nicht gefunden")
+
+    coordinators: list[WaveshareRelayCoordinator] = []
+    for entry_id in device.config_entries:
+        coordinator = hass.data.get(DOMAIN, {}).get(entry_id)
+        if isinstance(coordinator, WaveshareRelayCoordinator):
+            coordinators.append(coordinator)
+    if not coordinators:
+        raise HomeAssistantError(
+            "Das gewählte Gerät gehört zu keiner aktiven Waveshare-Instanz"
+        )
+    return coordinators
+
+
 def _register_services(hass: HomeAssistant) -> None:
-    """Services registrieren (wirken auf alle verbundenen Geräte)."""
+    """Services registrieren (ohne Ziel: alle Geräte, mit Ziel: nur dieses)."""
 
     if hass.services.has_service(DOMAIN, SERVICE_START_TEST):
         return  # Bereits registriert
 
     async def handle_start_test(call: ServiceCall) -> None:
-        for coord in _get_all_coordinators(hass):
+        for coord in _resolve_coordinators(hass, call):
             await coord.async_start_test(
                 laufzeit_s=call.data.get("laufzeit_s", 5.0),
                 pause_s=call.data.get("pause_s", 0.25),
@@ -117,15 +157,15 @@ def _register_services(hass: HomeAssistant) -> None:
             )
 
     async def handle_stop_test(call: ServiceCall) -> None:
-        for coord in _get_all_coordinators(hass):
+        for coord in _resolve_coordinators(hass, call):
             await coord.async_stop_test()
 
     async def handle_reset_stats(call: ServiceCall) -> None:
-        for coord in _get_all_coordinators(hass):
+        for coord in _resolve_coordinators(hass, call):
             coord.reset_stats()
 
     async def handle_all_off(call: ServiceCall) -> None:
-        for coord in _get_all_coordinators(hass):
+        for coord in _resolve_coordinators(hass, call):
             await coord.async_all_off()
 
     hass.services.async_register(
