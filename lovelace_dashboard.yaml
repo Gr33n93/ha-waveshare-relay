@@ -89,8 +89,6 @@ views:
               action: toggle
 
       # ── Betriebsart pro Kanal (Dauerbetrieb/Impuls) ──
-      # Die Select-Entities sind standardmäßig deaktiviert und müssen einmalig
-      # unter Geräte & Dienste → Waveshare Relay → Gerät aktiviert werden.
       - type: entities
         title: Betriebsart (Dauerbetrieb/Impuls)
         show_header_toggle: false

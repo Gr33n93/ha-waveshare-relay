@@ -1,9 +1,8 @@
 """Select-Plattform: Betriebsart pro Kanal (Dauerbetrieb/Impuls).
 
-Die Selects sind standardmäßig deaktiviert, damit die Installation nicht um
-bis zu 30 Entities wächst. Einmal aktiviert lassen sie sich wie jede andere
-Entity auf ein Dashboard legen und stellen die Betriebsart direkt von der
-Relais-Übersichtsseite um – derselbe Mechanismus wie im OptionsDialog.
+Pro Kanal gibt es eine Betriebsart-Auswahl, die standardmäßig aktiv ist und
+damit direkt am Gerät unter Steuerung sowie im Dashboard zur Verfügung steht –
+derselbe Mechanismus wie im OptionsDialog.
 """
 from __future__ import annotations
 
@@ -11,7 +10,6 @@ import logging
 
 from homeassistant.components.select import SelectEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -40,7 +38,7 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Betriebsart-Selects anlegen (standardmäßig deaktiviert)."""
+    """Betriebsart-Selects anlegen (standardmäßig aktiv)."""
     coordinator: WaveshareRelayCoordinator = hass.data[DOMAIN][entry.entry_id]
     entities = [
         WaveshareChannelModeSelect(coordinator, entry, channel)
@@ -67,8 +65,6 @@ class WaveshareChannelModeSelect(
     """Betriebsart eines Kanals: Dauerbetrieb oder Impuls."""
 
     _attr_has_entity_name = True
-    _attr_entity_category = EntityCategory.CONFIG
-    _attr_entity_registry_enabled_default = False
     _attr_icon = "mdi:tune-variant"
 
     def __init__(
