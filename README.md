@@ -68,20 +68,21 @@ Entities automatisch angelegt.
 
 | Typ | Anzahl | Beschreibung |
 | --- | ---: | --- |
-| `switch` | Relaisanzahl | Ein Schalter pro Relais (Betriebsart: Dauerbetrieb oder Impuls) |
+| `switch` | Relaisanzahl | Ein Schalter pro Relais (Modus: Switch oder Pulse) |
+| `select` | Relaisanzahl | Mode-Auswahl pro Relais (Switch/Pulse) |
 | `binary_sensor` | 1 | Verbindungsstatus |
 | `sensor` | 11 + 5 pro Relais | Statistik, Laufzeiten, Zähler und Teststatus |
 | `button` | 4 | Funktionstest, Alle aus, Statistik zurücksetzen |
 
-## Betriebsart pro Kanal (Switch / Pulse)
+## Modus pro Kanal (Switch / Pulse)
 
 Jeder Kanal ist über die Integrationsoptionen (**Geräte & Dienste → Waveshare
-Relay → Konfigurieren**) oder direkt per Betriebsart-Select einzeln
-konfigurierbar: Anzeigename, Betriebsart und Impulsdauer.
+Relay → Konfigurieren**) oder direkt per Mode-Select einzeln konfigurierbar:
+Anzeigename, Modus und Impulsdauer.
 
-- **Switch** (Dauerbetrieb): normales Ein-/Ausschalten, die Entity zeigt den
-  echten Boardzustand.
-- **Pulse** (Impuls): Das Einschalten löst den nativen Waveshare-Impulsbefehl
+- **Switch**: normales Ein-/Ausschalten, die Entity zeigt den echten
+  Boardzustand.
+- **Pulse**: Das Einschalten löst den nativen Waveshare-Impulsbefehl
   aus (Modbus FC05 an Adresse `0x0200 + Kanal`, Zeit in 100-ms-Schritten). Das
   Board schaltet nach der eingestellten Dauer selbstständig zurück – auch
   wenn Home Assistant in der Zwischenzeit nicht erreichbar ist. Gedacht für
@@ -93,7 +94,7 @@ Dashboards und Automationen bleiben beim Umschalten unverändert. Zusätzliche
 Attribute (`betriebsart` mit `switch`/`pulse`, `impulsdauer_ms`,
 `letzter_impuls`) zeigen die aktuelle Konfiguration.
 
-### Betriebsart direkt am Gerät / Dashboard
+### Mode direkt am Gerät / Dashboard
 
 Zusätzlich zum OptionsDialog gibt es pro Kanal eine Select-Entity
 (`select.*_mode`, angezeigt als „Relais N Mode“), mit der sich Switch/Pulse

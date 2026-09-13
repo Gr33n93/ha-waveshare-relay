@@ -88,7 +88,7 @@ views:
             tap_action:
               action: toggle
 
-      # ── Betriebsart pro Kanal (Switch/Pulse) ──
+      # ── Modus pro Kanal (Switch/Pulse) ──
       - type: entities
         title: Mode (Switch/Pulse)
         show_header_toggle: false

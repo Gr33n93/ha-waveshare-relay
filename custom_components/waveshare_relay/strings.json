@@ -25,17 +25,17 @@
     "step": {
       "init": {
         "title": "Waveshare Relay konfigurieren",
-        "description": "Kanal auswählen, der bearbeitet werden soll. Die Betriebsart lässt sich jederzeit wechseln – Name und Entity-ID bleiben erhalten.",
+        "description": "Kanal auswählen, der bearbeitet werden soll. Der Modus lässt sich jederzeit wechseln – Name und Entity-ID bleiben erhalten.",
         "data": {
           "channel": "Kanal"
         }
       },
       "channel": {
         "title": "Kanal {channel_number} konfigurieren",
-        "description": "Betriebsart des Kanals festlegen. Im Modus „Pulse“ löst das Einschalten einen nativen Board-Impuls aus; das Board schaltet selbstständig zurück. Die Entity-ID bleibt unverändert.",
+        "description": "Modus des Kanals festlegen. Im Modus „Pulse“ löst das Einschalten einen nativen Board-Impuls aus; das Board schaltet selbstständig zurück. Die Entity-ID bleibt unverändert.",
         "data": {
           "channel_name": "Anzeigename",
-          "betriebsart": "Betriebsart (Switch/Pulse)",
+          "betriebsart": "Modus (Switch/Pulse)",
           "impulsdauer_ms": "Impulsdauer (ms)"
         }
       }
