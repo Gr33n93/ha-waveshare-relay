@@ -45,6 +45,9 @@ SERVICE_TEST_SCHEMA = vol.Schema(
             vol.Coerce(float), vol.Range(min=0, max=60)
         ),
         vol.Optional("einmalig", default=True): bool,
+        # Ohne diesen Key verwirft voluptuous die Geräteauswahl und der
+        # Aufruf fehlschlaegt mit "extra keys not allowed".
+        vol.Optional("device_id"): str,
     }
 )
 

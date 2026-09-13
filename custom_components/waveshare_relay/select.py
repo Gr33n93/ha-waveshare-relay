@@ -44,7 +44,7 @@ async def async_setup_entry(
         WaveshareChannelModeSelect(coordinator, entry, channel)
         for channel in range(coordinator.relay_count)
     ]
-    _LOGGER.info("Select-Plattform: %d Betriebsart-Selects angelegt", len(entities))
+    _LOGGER.info("Select-Plattform: %d Mode-Selects angelegt", len(entities))
     async_add_entities(entities)
 
 

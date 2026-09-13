@@ -181,7 +181,6 @@ class WaveshareRelayOptionsFlowHandler(config_entries.OptionsFlow):
         """Schritt 2: Gewählten Kanal konfigurieren."""
         coordinator = self.hass.data[DOMAIN][self.config_entry.entry_id]
         config = coordinator.channel_configs[self._channel]
-        errors: dict[str, str] = {}
 
         if user_input is not None:
             stored = dict(self.config_entry.options.get(CONF_CHANNEL_CONFIGS, {}))
@@ -223,6 +222,5 @@ class WaveshareRelayOptionsFlowHandler(config_entries.OptionsFlow):
                     ),
                 }
             ),
-            errors=errors,
             description_placeholders={"channel_number": str(self._channel + 1)},
         )
