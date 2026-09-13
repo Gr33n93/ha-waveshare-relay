@@ -128,6 +128,9 @@ class WaveshareChannelDurationSensor(
     _attr_native_unit_of_measurement = "s"
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
     _attr_entity_category = EntityCategory.DIAGNOSTIC
+    # Kanal-Statistiken sind Zusatzinfos und stehen auch als Attribute am
+    # Schalter – standardmäßig deaktiviert, damit die Diagnose-Karte kurz bleibt.
+    _attr_entity_registry_enabled_default = False
 
     def __init__(self, coordinator, entry, channel: int, kind: str) -> None:
         super().__init__(coordinator)
@@ -157,6 +160,7 @@ class WaveshareChannelCounterSensor(
     _attr_has_entity_name = True
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
     _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_entity_registry_enabled_default = False
 
     def __init__(self, coordinator, entry, channel: int, kind: str) -> None:
         super().__init__(coordinator)
