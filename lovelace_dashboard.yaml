@@ -88,6 +88,38 @@ views:
             tap_action:
               action: toggle
 
+      # ── Betriebsart pro Kanal (Dauerbetrieb/Impuls) ──
+      # Die Select-Entities sind standardmäßig deaktiviert und müssen einmalig
+      # unter Geräte & Dienste → Waveshare Relay → Gerät aktiviert werden.
+      - type: entities
+        title: Betriebsart (Dauerbetrieb/Impuls)
+        show_header_toggle: false
+        entities:
+          - entity: select.waveshare_relay_relais_1_betriebsart
+            name: Relais 1
+            icon: mdi:tune-variant
+          - entity: select.waveshare_relay_relais_2_betriebsart
+            name: Relais 2
+            icon: mdi:tune-variant
+          - entity: select.waveshare_relay_relais_3_betriebsart
+            name: Relais 3
+            icon: mdi:tune-variant
+          - entity: select.waveshare_relay_relais_4_betriebsart
+            name: Relais 4
+            icon: mdi:tune-variant
+          - entity: select.waveshare_relay_relais_5_betriebsart
+            name: Relais 5
+            icon: mdi:tune-variant
+          - entity: select.waveshare_relay_relais_6_betriebsart
+            name: Relais 6
+            icon: mdi:tune-variant
+          - entity: select.waveshare_relay_relais_7_betriebsart
+            name: Relais 7
+            icon: mdi:tune-variant
+          - entity: select.waveshare_relay_relais_8_betriebsart
+            name: Relais 8
+            icon: mdi:tune-variant
+
       # ── Notaus ──
       - type: button
         name: "⚡ ALLE AUS"

@@ -93,6 +93,21 @@ Dashboards und Automationen bleiben beim Umschalten unverändert. Zusätzliche
 Attribute (`betriebsart`, `impulsdauer_ms`, `letzter_impuls`) zeigen die
 aktuelle Konfiguration.
 
+### Betriebsart direkt im Dashboard
+
+Zusätzlich zum OptionsDialog gibt es pro Kanal eine Select-Entity
+(`select.*_betriebsart`), mit der sich Dauerbetrieb/Impuls direkt von der
+Relais-Übersichtsseite umstellen lässt. Diese Entities sind standardmäßig
+**deaktiviert**, damit die Installation nicht um bis zu 30 Entities wächst:
+
+1. **Geräte & Dienste → Waveshare Relay → Gerät** öffnen
+2. Die deaktivierte Entität **„Relais N Betriebsart"** anklicken und aktivieren
+3. Die Entität wie gewohnt als Karte (z. B. Tile oder Dropdown) aufs
+   Dashboard legen – ein Beispiel ist in `lovelace_dashboard.yaml` enthalten
+
+Eine Umstellung über die Select-Entity wirkt identisch zum OptionsDialog:
+sie wird gespeichert und überlebt Neustarts.
+
 ## Services
 
 | Service | Beschreibung |
