@@ -129,6 +129,43 @@ Während eines Funktionstests sind manuelle Schaltbefehle gesperrt, damit sie
 sich nicht mit dem Testablauf überlagern. `alle_aus` bleibt als
 Sicherheitsstopp jederzeit verfügbar.
 
+## Verbindungsüberwachung
+
+Fällt das Board aus (Strom- oder Netzwerkverlust), gehen alle Entities des
+Geräts auf **Nicht verfügbar** und der Binary-Sensor **„Verbindung"**
+(`binary_sensor.*_verbindung`) auf **Aus**. Sobald das Board wieder erreichbar
+ist, verbindet sich die Integration automatisch neu – ohne Neustart. Der
+letzte Fehler steht in den Diagnose-Sensoren „Letzte Fehlermeldung" und
+„Letzter Fehler (Zeit)".
+
+Eine aktive Benachrichtigung richtest du dir selbst per Automation ein.
+Beispiel (Benachrichtigung, wenn das Board länger als eine Minute weg ist):
+
+```yaml
+automation:
+  - alias: "Waveshare Relay Verbindung überwachen"
+    mode: single
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.waveshare_relay_verbindung
+        to: "off"
+        for: "00:01:00"
+    action:
+      - service: notify.persistent_notification
+        data:
+          title: "Waveshare Relay offline"
+          message: "Das Board ist seit über einer Minute nicht erreichbar."
+```
+
+Für eine Handy-Benachrichtigung `notify.persistent_notification` durch
+`notify.mobile_app_<gerät>` ersetzen. Die tatsächliche Entity-ID kann je nach
+Gerätename abweichen – unter **Entwicklerwerkzeuge → Zustände** nach
+`verbindung` suchen.
+
+Hinweis: Impulskanäle (Modus „Pulse") werden bei einer Wiederherstellung
+niemals automatisch erneut ausgelöst; normale Kanäle zeigen nach der
+Wiederverbindung den tatsächlichen Boardzustand.
+
 ## Dashboard
 
 `lovelace_dashboard.yaml` enthält ein Beispiel-Dashboard für ein 8CH-Board mit:

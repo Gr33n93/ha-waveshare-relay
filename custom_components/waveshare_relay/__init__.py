@@ -59,8 +59,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Releases up to 1.1.5 stored the integration version as device firmware.
     # Clear that stale value because the relay does not report its firmware.
     device_registry = dr.async_get(hass)
-    device = device_registry.async_get_device(
-        identifiers={(DOMAIN, entry.entry_id)}
+    device = device_registry.async_get_device_by_identifier(
+        (DOMAIN, entry.entry_id), entry.entry_id
     )
     if device is not None and device.sw_version is not None:
         device_registry.async_update_device(device.id, sw_version=None)

@@ -3,3 +3,8 @@
 __pycache__/
 *.py[cod]
 .DS_Store
+
+# Lokale Arbeits- und Tooling-Ordner
+design/
+.zcode/
+__pycache__/
