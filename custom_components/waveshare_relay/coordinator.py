@@ -213,84 +213,85 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
                 "abgelehnt (Alle-Aus bleibt möglich)."
             )
 
-    async def async_write_coil(
-        self, channel: int, value: bool, source: str = "manuell"
+    async def _async_write(
+        self,
+        channel: int,
+        source: str,
+        *,
+        value: bool = False,
+        pulse_duration_ms: int = 0,
     ) -> None:
+        """Einheitlicher Schreibpfad: FC05-Write oder nativer Impuls.
+
+        Zentralisiert Lock, Verbindung, Statistik und Fehlerbehandlung;
+        async_write_coil und async_pulse sind die öffentlichen Fassaden.
+        """
+        pulse = pulse_duration_ms > 0
         self._ensure_write_allowed(source)
         self.stats["schreibvorgaenge_gesamt"] += 1
         cs = self.channel_stats[channel]
         try:
             async with self._lock:
                 client = await self._ensure_connected()
-                result = await write_coil_compat(
-                    client, address=channel, value=value, unit_id=self.unit_id
-                )
+                if pulse:
+                    result = await write_pulse_compat(
+                        client,
+                        address=PULSE_ADDR_ON + channel,
+                        duration_ms=pulse_duration_ms,
+                        unit_id=self.unit_id,
+                    )
+                else:
+                    result = await write_coil_compat(
+                        client, address=channel, value=value, unit_id=self.unit_id
+                    )
             if result.isError():
                 raise ModbusException(
-                    f"FC05-Fehler Kanal {channel + 1}: {result}"
+                    f"{'Impuls' if pulse else 'FC05'}-Fehler Kanal {channel + 1}: {result}"
                 )
 
             self.stats["schreiben_ok"] += 1
             self.stats["letzter_erfolg_zeit"] = _iso_now()
-            if value:
+            if pulse or value:
                 cs["ein_zaehler"] += 1
             else:
                 cs["aus_zaehler"] += 1
             cs["letzter_befehl"] = f"{_iso_now()} ({source})"
+            if pulse:
+                cs["letzter_impuls"] = _iso_now()
 
-            self._apply_relay_state(channel, value)
+            if pulse:
+                # Optimistisch einschalten; nach Ablauf des Impulsfensters
+                # erneut lesen – das Board hat dann selbst abgeschaltet.
+                self._apply_relay_state(channel, True)
+            else:
+                self._apply_relay_state(channel, value)
             self.async_set_updated_data(
                 {"relay_states": self.relay_states, "stats": self.stats}
             )
+            if pulse:
+                self._schedule_pulse_refresh(channel, pulse_duration_ms)
         except Exception as err:
             self.stats["schreiben_fehler"] += 1
             cs["schreibfehler"] += 1
             self.stats["letzte_fehlermeldung"] = str(err)
             self.stats["letzter_fehler_zeit"] = _iso_now()
-            _LOGGER.error("Schreiben Kanal %d fehlgeschlagen: %s", channel + 1, err)
+            _LOGGER.error(
+                "%s Kanal %d fehlgeschlagen: %s",
+                "Impuls" if pulse else "Schreiben", channel + 1, err,
+            )
             raise
+
+    async def async_write_coil(
+        self, channel: int, value: bool, source: str = "manuell"
+    ) -> None:
+        """Relais dauerhaft ein- oder ausschalten."""
+        await self._async_write(channel, source, value=value)
 
     async def async_pulse(
         self, channel: int, duration_ms: int, source: str = "HA-UI"
     ) -> None:
         """Nativen Waveshare-Impuls auslösen; das Board schaltet selbst zurück."""
-        self._ensure_write_allowed(source)
-        self.stats["schreibvorgaenge_gesamt"] += 1
-        cs = self.channel_stats[channel]
-        try:
-            async with self._lock:
-                client = await self._ensure_connected()
-                result = await write_pulse_compat(
-                    client,
-                    address=PULSE_ADDR_ON + channel,
-                    duration_ms=duration_ms,
-                    unit_id=self.unit_id,
-                )
-            if result.isError():
-                raise ModbusException(
-                    f"Impuls-Fehler Kanal {channel + 1}: {result}"
-                )
-
-            self.stats["schreiben_ok"] += 1
-            self.stats["letzter_erfolg_zeit"] = _iso_now()
-            cs["ein_zaehler"] += 1
-            cs["letzter_befehl"] = f"{_iso_now()} ({source})"
-            cs["letzter_impuls"] = _iso_now()
-
-            # Optimistisch einschalten; nach Ablauf des Impulsfensters erneut
-            # lesen – das Board hat dann bereits selbstständig ausgeschaltet.
-            self._apply_relay_state(channel, True)
-            self.async_set_updated_data(
-                {"relay_states": self.relay_states, "stats": self.stats}
-            )
-            self._schedule_pulse_refresh(channel, duration_ms)
-        except Exception as err:
-            self.stats["schreiben_fehler"] += 1
-            cs["schreibfehler"] += 1
-            self.stats["letzte_fehlermeldung"] = str(err)
-            self.stats["letzter_fehler_zeit"] = _iso_now()
-            _LOGGER.error("Impuls Kanal %d fehlgeschlagen: %s", channel + 1, err)
-            raise
+        await self._async_write(channel, source, pulse_duration_ms=duration_ms)
 
     def _schedule_pulse_refresh(self, channel: int, duration_ms: int) -> None:
         """Nach dem Impulsfenster den Boardzustand erneut abfragen."""

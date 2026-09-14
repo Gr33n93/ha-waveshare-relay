@@ -6,18 +6,17 @@ from typing import Any
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
     ATTR_LAST_PULSE,
     ATTR_ON_DURATION,
     ATTR_OFF_DURATION,
     DOMAIN,
-    model_name_for_relay_count,
 )
 from .coordinator import WaveshareRelayCoordinator
+from .entity import WaveshareChannelEntity
 from .models import ChannelMode
 
 _LOGGER = logging.getLogger(__name__)
@@ -30,17 +29,14 @@ async def async_setup_entry(
 ) -> None:
     """Switch-Entities anlegen."""
     coordinator: WaveshareRelayCoordinator = hass.data[DOMAIN][entry.entry_id]
-    entities = [
+    async_add_entities(
         WaveshareRelaySwitch(coordinator, entry, channel)
         for channel in range(coordinator.relay_count)
-    ]
-    async_add_entities(entities)
+    )
 
 
-class WaveshareRelaySwitch(CoordinatorEntity[WaveshareRelayCoordinator], SwitchEntity):
+class WaveshareRelaySwitch(WaveshareChannelEntity, SwitchEntity):
     """Ein einzelner Relais-Schalter."""
-
-    _attr_has_entity_name = True
 
     def __init__(
         self,
@@ -49,11 +45,13 @@ class WaveshareRelaySwitch(CoordinatorEntity[WaveshareRelayCoordinator], SwitchE
         channel: int,
     ) -> None:
         """Initialisierung."""
-        super().__init__(coordinator)
-        self._channel = channel
-        self._attr_unique_id = f"{entry.entry_id}_relay_{channel + 1}"
-        self._attr_name = coordinator.relay_names[channel]
-        self._attr_device_info = _device_info(entry, coordinator)
+        super().__init__(
+            coordinator,
+            entry,
+            channel,
+            unique_id=f"{entry.entry_id}_relay_{channel + 1}",
+            name=coordinator.relay_names[channel],
+        )
 
     @property
     def _config(self):
@@ -71,11 +69,6 @@ class WaveshareRelaySwitch(CoordinatorEntity[WaveshareRelayCoordinator], SwitchE
     def is_on(self) -> bool:
         """Aktueller Zustand."""
         return self.coordinator.relay_states[self._channel]
-
-    @property
-    def available(self) -> bool:
-        """Verfügbar wenn Verbindung steht."""
-        return self.coordinator.stats.get("verbunden", False)
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
@@ -116,19 +109,3 @@ class WaveshareRelaySwitch(CoordinatorEntity[WaveshareRelayCoordinator], SwitchE
         """Ausschalten; beendet auch einen laufenden Impuls."""
         await self.coordinator.async_write_coil(self._channel, False, "HA-UI")
         self.async_write_ha_state()
-
-    @callback
-    def _handle_coordinator_update(self) -> None:
-        """Coordinator-Update verarbeiten."""
-        self.async_write_ha_state()
-
-
-def _device_info(entry: ConfigEntry, coordinator: WaveshareRelayCoordinator) -> dict:
-    """Geräte-Info für alle Entities dieses Boards."""
-    return {
-        "identifiers": {(DOMAIN, entry.entry_id)},
-        "name": f"Waveshare Relay ({entry.data.get('host', '?')})",
-        "manufacturer": "Waveshare / ZLAN",
-        "model": model_name_for_relay_count(coordinator.relay_count),
-        "configuration_url": "https://github.com/Gr33n93/ha-waveshare-relay",
-    }

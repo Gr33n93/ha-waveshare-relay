@@ -7,12 +7,13 @@ from homeassistant.components.binary_sensor import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, model_name_for_relay_count
+from .const import DOMAIN
 from .coordinator import WaveshareRelayCoordinator
+from .entity import device_info
 
 
 async def async_setup_entry(
@@ -22,9 +23,7 @@ async def async_setup_entry(
 ) -> None:
     """Binary Sensor anlegen."""
     coordinator: WaveshareRelayCoordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities(
-        [WaveshareConnectionSensor(coordinator, entry)]
-    )
+    async_add_entities([WaveshareConnectionSensor(coordinator, entry)])
 
 
 class WaveshareConnectionSensor(
@@ -41,19 +40,9 @@ class WaveshareConnectionSensor(
     def __init__(self, coordinator, entry) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry.entry_id}_connection"
-        self._attr_device_info = {
-            "identifiers": {(DOMAIN, entry.entry_id)},
-            "name": f"Waveshare Relay ({entry.data.get('host', '?')})",
-            "manufacturer": "Waveshare / ZLAN",
-            "model": model_name_for_relay_count(coordinator.relay_count),
-            "configuration_url": "https://github.com/Gr33n93/ha-waveshare-relay",
-        }
+        self._attr_device_info = device_info(entry, coordinator)
 
     @property
     def is_on(self) -> bool:
-        """True wenn verbunden."""
-        return self.coordinator.stats.get("verbunden", False)
-
-    @callback
-    def _handle_coordinator_update(self) -> None:
-        self.async_write_ha_state()
+        """Verbunden, wenn der letzte Abruf erfolgreich war."""
+        return self.coordinator.last_update_success
