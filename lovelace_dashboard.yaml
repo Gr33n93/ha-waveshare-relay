@@ -200,8 +200,6 @@ views:
 
   # ═══════════════════════════════════════════════════════════════════════════
   # VIEW 3: Kanaldetails (Dauer & Zähler pro Relais)
-  # HINWEIS: Diese Statistik-Sensoren sind standardmäßig deaktiviert und müssen
-  # einmalig am Gerät aktiviert werden ("+N deaktivierte Entitäten").
   # ═══════════════════════════════════════════════════════════════════════════
   - title: Kanaldetails
     path: kanaldetails
