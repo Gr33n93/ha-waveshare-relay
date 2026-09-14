@@ -195,6 +195,8 @@ Danach Home Assistant neu starten.
 - Andere Modbus-Adapter oder Testtools sollten nicht parallel verbunden sein.
 - Laufzeitwerte werden sessionbasiert gezählt und nach Neustart oder Reset neu
   begonnen.
+- Die Dauer-Sensoren schreiben sich bei jedem Relais-Wechsel fort; der
+  aktuell laufende Wert steht als Attribut `aktuell_s` zur Verfügung.
 - RS485/RTU-Boards wie das Modbus RTU Relay 4CH werden nicht unterstützt.
 - Die Integration nutzt die Modbus-Bibliothek, die Home Assistant über die
   eingebaute Modbus-Integration bereitstellt.

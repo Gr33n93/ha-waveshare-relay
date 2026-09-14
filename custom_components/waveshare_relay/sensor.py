@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from typing import Any
 
 from homeassistant.components.sensor import SensorEntity, SensorStateClass
@@ -15,6 +16,18 @@ from .const import DOMAIN, model_name_for_relay_count
 from .coordinator import WaveshareRelayCoordinator
 
 _LOGGER = logging.getLogger(__name__)
+
+# Diese Werte ändern sich bei jedem Poll (2 s). Damit sie Logbook und
+# Recorder nicht fluten, schreiben sie ihren Zustand max. einmal pro Minute.
+CHURN_UPDATE_INTERVAL = 60
+CHURNY_KEYS = {
+    "abfragen_gesamt",
+    "abfragen_ok",
+    "letzte_abfrage_ms",
+    "schreibvorgaenge_gesamt",
+    "schreiben_ok",
+    "letzter_erfolg_zeit",
+}
 
 # ── Globale Statistik-Sensoren ──
 GLOBAL_SENSORS: list[dict[str, Any]] = [
@@ -69,6 +82,7 @@ class WaveshareGlobalSensor(
     def __init__(self, coordinator, entry, sdef: dict) -> None:
         super().__init__(coordinator)
         self._key = sdef["key"]
+        self._last_write = 0.0
         self._attr_unique_id = f"{entry.entry_id}_stat_{self._key}"
         self._attr_name = sdef["name"]
         self._attr_icon = sdef["icon"]
@@ -82,6 +96,11 @@ class WaveshareGlobalSensor(
 
     @callback
     def _handle_coordinator_update(self) -> None:
+        if self._key in CHURNY_KEYS:
+            now = time.monotonic()
+            if now - self._last_write < CHURN_UPDATE_INTERVAL:
+                return
+            self._last_write = now
         self.async_write_ha_state()
 
 
@@ -141,8 +160,22 @@ class WaveshareChannelDurationSensor(
 
     @property
     def native_value(self) -> float:
-        cs = self.coordinator.get_channel_stats(self._channel)
-        return cs[f"{self._kind}schaltdauer_s"]
+        """Kumulierte Sekunden zum Zeitpunkt des letzten Relais-Wechsels.
+
+        Bewusst ohne Live-Fortschreibung – sonst würde der Zustand bei
+        jedem Poll wechseln und Logbook/Recorder fluten. Der aktuelle
+        Live-Wert steht als Attribut `aktuell_s`.
+        """
+        return self.coordinator.channel_stats[self._channel][
+            f"{self._kind}schaltdauer_s"
+        ]
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        live = self.coordinator.get_channel_stats(self._channel)[
+            f"{self._kind}schaltdauer_s"
+        ]
+        return {"aktuell_s": live}
 
     @callback
     def _handle_coordinator_update(self) -> None:
