@@ -152,6 +152,8 @@ class WaveshareChannelDurationSensor(
         super().__init__(coordinator)
         self._channel = channel
         self._kind = kind  # "ein" or "aus"
+        self._last_write = 0.0
+        self._last_written_val: float | None = None
         label = "Einschaltdauer" if kind == "ein" else "Ausschaltdauer"
         self._attr_unique_id = f"{entry.entry_id}_ch{channel + 1}_{kind}_dauer"
         self._attr_name = f"Relais {channel + 1} {label}"
@@ -179,6 +181,19 @@ class WaveshareChannelDurationSensor(
 
     @callback
     def _handle_coordinator_update(self) -> None:
+        # Sofort schreiben wenn der eingefrorene Wert wechselt (Relais-
+        # wechsel); sonst das Attribut-Refresh auf 1x pro Minute drosseln,
+        # da schon reine Attribut-Änderungen Recorder-Zeilen erzeugen.
+        val = self.coordinator.channel_stats[self._channel][
+            f"{self._kind}schaltdauer_s"
+        ]
+        now = time.monotonic()
+        if val == self._last_written_val and (
+            now - self._last_write < CHURN_UPDATE_INTERVAL
+        ):
+            return
+        self._last_written_val = val
+        self._last_write = now
         self.async_write_ha_state()
 
 

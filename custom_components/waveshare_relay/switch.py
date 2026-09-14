@@ -79,8 +79,13 @@ class WaveshareRelaySwitch(CoordinatorEntity[WaveshareRelayCoordinator], SwitchE
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        """Zusatzattribute: Dauer, Zähler, Betriebsart."""
-        cs = self.coordinator.get_channel_stats(self._channel)
+        """Zusatzattribute: Dauer, Zähler, Betriebsart.
+
+        Bewusst die eingefrorenen Werte (Stand: letzter Wechsel) statt der
+        Live-Berechnung – Attribut-Änderungen bei jedem Poll würden den
+        Recorder fluten.
+        """
+        cs = self.coordinator.channel_stats[self._channel]
         config = self._config
         attrs: dict[str, Any] = {
             ATTR_ON_DURATION: cs["einschaltdauer_s"],
