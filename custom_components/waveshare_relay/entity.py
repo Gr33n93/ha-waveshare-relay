@@ -27,8 +27,9 @@ class WaveshareChannelEntity(
 ):
     """Basis für Entities, die genau einen Kanal abbilden.
 
-    Verdrahtet unique_id, Anzeigename und Geräte-Info einheitlich;
-    konkrete Plattformen ergänzen nur noch ihr Verhalten.
+    Verdrahtet unique_id und Geräte-Info einheitlich; der Anzeigename
+    wird dynamisch aus dem Kanalprofil gelesen, sodass Umbenennungen und
+    Moduswechsel ohne Reload sofort greifen.
     """
 
     _attr_has_entity_name = True
@@ -40,10 +41,16 @@ class WaveshareChannelEntity(
         channel: int,
         *,
         unique_id: str,
-        name: str,
+        name_suffix: str = "",
     ) -> None:
         super().__init__(coordinator)
         self._channel = channel
+        self._name_suffix = name_suffix
         self._attr_unique_id = unique_id
-        self._attr_name = name
         self._attr_device_info = device_info(entry, coordinator)
+
+    @property
+    def name(self) -> str | None:
+        """Anzeigename: Kanalname plus optionalem Suffix."""
+        base = self.coordinator.relay_names[self._channel]
+        return f"{base} {self._name_suffix}" if self._name_suffix else base

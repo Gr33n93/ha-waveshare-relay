@@ -143,13 +143,12 @@ class WaveshareChannelDurationSensor(WaveshareChannelEntity, SensorEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
 
     def __init__(self, coordinator, entry, channel: int, kind: str) -> None:
-        label = "Einschaltdauer" if kind == "ein" else "Ausschaltdauer"
         super().__init__(
             coordinator,
             entry,
             channel,
             unique_id=f"{entry.entry_id}_ch{channel + 1}_{kind}_dauer",
-            name=f"Relais {channel + 1} {label}",
+            name_suffix="Einschaltdauer" if kind == "ein" else "Ausschaltdauer",
         )
         self._kind = kind  # "ein" or "aus"
         self._last_write = 0.0
@@ -213,7 +212,7 @@ class WaveshareChannelCounterSensor(WaveshareChannelEntity, SensorEntity):
             entry,
             channel,
             unique_id=f"{entry.entry_id}_ch{channel + 1}_{kind}_cnt",
-            name=f"Relais {channel + 1} {self._LABELS[kind]}",
+            name_suffix=self._LABELS[kind],
         )
         self._stat_key = self._STAT_KEYS[kind]
         self._attr_icon = self._ICONS[kind]

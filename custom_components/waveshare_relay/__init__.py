@@ -85,10 +85,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Services nur einmal global registrieren (Ziel optional wählbar)
     _register_services(hass)
 
-    # Optionsänderungen (Kanalprofile) laden den Entry neu
-    entry.async_on_unload(
-        entry.add_update_listener(_async_update_listener)
-    )
+    # Optionsänderungen (Kanalprofile) werden zur Laufzeit übernommen –
+    # ohne Reload bleiben Statistik und Verbindung erhalten.
+    entry.async_on_unload(entry.add_update_listener(_async_update_listener))
 
     return True
 
@@ -96,8 +95,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def _async_update_listener(
     hass: HomeAssistant, entry: ConfigEntry
 ) -> None:
-    """Entry bei geänderten Optionen neu laden."""
-    await hass.config_entries.async_reload(entry.entry_id)
+    """Geänderte Kanalprofile an den laufenden Coordinator durchreichen."""
+    coordinator = hass.data.get(DOMAIN, {}).get(entry.entry_id)
+    if not isinstance(coordinator, WaveshareRelayCoordinator):
+        return
+    relay_count = entry.data.get(CONF_RELAY_COUNT, DEFAULT_RELAY_COUNT)
+    coordinator.apply_channel_configs(
+        channel_configs_from_entry(entry.options, relay_count)
+    )
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

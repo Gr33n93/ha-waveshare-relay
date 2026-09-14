@@ -50,7 +50,6 @@ class WaveshareRelaySwitch(WaveshareChannelEntity, SwitchEntity):
             entry,
             channel,
             unique_id=f"{entry.entry_id}_relay_{channel + 1}",
-            name=coordinator.relay_names[channel],
         )
 
     @property

@@ -46,13 +46,13 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
         self.port = port
         self.unit_id = unit_id
         self.relay_count = relay_count
-        # Fehlende Profile mit Dauerbetrieb-Standards auffüllen, damit die
-        # Liste immer relay_count Einträge hat.
-        configs = list(channel_configs) if channel_configs else []
-        if len(configs) < relay_count:
-            configs.extend(default_channel_configs(relay_count)[len(configs):])
-        self.channel_configs = configs
-        self.relay_names = [c.name for c in self.channel_configs]
+        # Kanalprofile; apply_channel_configs füllt fehlende auf und
+        # verdrahtet relay_names – auch zur Laufzeit nach Optionsänderungen.
+        self.channel_configs: list[ChannelConfig] = []
+        self.relay_names: list[str] = []
+        self.apply_channel_configs(
+            channel_configs or default_channel_configs(relay_count)
+        )
 
         self._client: AsyncModbusTcpClient | None = None
         self._lock = asyncio.Lock()
@@ -92,6 +92,20 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
         self.test_stop = False
         self.test_current_channel = 0
         self._test_task: asyncio.Task | None = None
+
+    def apply_channel_configs(self, configs: list[ChannelConfig]) -> None:
+        """Kanalprofile übernehmen – auch zur Laufzeit ohne Reload.
+
+        Statistik und Verbindungen bleiben dabei vollständig erhalten;
+        fehlende Kanäle fallen auf Dauerbetrieb mit Standardnamen zurück.
+        """
+        configs = list(configs)
+        if len(configs) < self.relay_count:
+            configs.extend(
+                default_channel_configs(self.relay_count)[len(configs):]
+            )
+        self.channel_configs = configs
+        self.relay_names = [c.name for c in configs]
 
     # ─────────────── Modbus Connection ───────────────
 
