@@ -1,4 +1,4 @@
-"""Config Flow für Waveshare PoE Relay."""
+"""Config flow for the Waveshare PoE relay."""
 from __future__ import annotations
 
 import logging
@@ -67,7 +67,7 @@ STEP_USER_SCHEMA = vol.Schema(
 
 
 class WaveshareRelayConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Config Flow: Verbindungsdaten + Verbindungstest."""
+    """Config flow: connection data plus connection test."""
 
     VERSION = 1
 
@@ -76,13 +76,13 @@ class WaveshareRelayConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def async_get_options_flow(
         config_entry: config_entries.ConfigEntry,
     ) -> WaveshareRelayOptionsFlowHandler:
-        """Options-Flow-Handler erzeugen."""
+        """Create the options flow handler."""
         return WaveshareRelayOptionsFlowHandler()
 
     async def async_step_user(
         self, user_input: dict | None = None
     ) -> FlowResult:
-        """Schritt 1: Verbindungsdaten eingeben."""
+        """Step 1: enter the connection data."""
         errors: dict[str, str] = {}
 
         if user_input is not None:
@@ -106,7 +106,7 @@ class WaveshareRelayConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     if result.isError():
                         raise ConnectionError(f"Modbus-Fehler: {result}")
                 except Exception as err:
-                    _LOGGER.error("Verbindungstest fehlgeschlagen: %s", err)
+                    _LOGGER.error("Connection test failed: %s", err)
                     errors["base"] = "cannot_connect"
                 else:
                     unique_id = f"waveshare_relay_{host}_{port}_{unit_id}"
@@ -136,20 +136,20 @@ class WaveshareRelayConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 
 class WaveshareRelayOptionsFlowHandler(config_entries.OptionsFlow):
-    """Options-Flow: Kanäle einzeln bearbeiten (Name, Betriebsart, Impulsdauer).
+    """Options flow: edit channels one at a time (name, mode, duration).
 
-    Der Moduswechsel ändert weder Entity-ID noch Unique-ID – Dashboards
-    und Automationen bleiben beim Umschalten unverändert.
+    Switching the mode changes neither entity ID nor unique ID, so
+    dashboards and automations keep working.
     """
 
     def __init__(self) -> None:
-        """Gewählten Kanal zwischen den Schritten merken."""
+        """Remember the selected channel between steps."""
         self._channel: int = 0
 
     async def async_step_init(
         self, user_input: dict | None = None
     ) -> FlowResult:
-        """Schritt 1: Kanal auswählen."""
+        """Step 1: pick a channel."""
         if user_input is not None:
             self._channel = int(user_input[CONF_CHANNEL])
             return await self.async_step_channel()
@@ -178,7 +178,7 @@ class WaveshareRelayOptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_channel(
         self, user_input: dict | None = None
     ) -> FlowResult:
-        """Schritt 2: Gewählten Kanal konfigurieren."""
+        """Step 2: configure the selected channel."""
         coordinator = self.hass.data[DOMAIN][self.config_entry.entry_id]
         config = coordinator.channel_configs[self._channel]
 

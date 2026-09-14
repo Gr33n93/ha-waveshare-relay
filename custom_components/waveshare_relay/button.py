@@ -1,4 +1,4 @@
-"""Button-Plattform: Funktionstest, Alle Aus, Statistik Reset."""
+"""Button platform: function test, all off, statistics reset."""
 from __future__ import annotations
 
 import logging
@@ -22,7 +22,7 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Button-Entities anlegen."""
+    """Create button entities."""
     coordinator: WaveshareRelayCoordinator = hass.data[DOMAIN][entry.entry_id]
     async_add_entities(
         [
@@ -35,7 +35,7 @@ async def async_setup_entry(
 
 
 class _WaveshareButton(CoordinatorEntity[WaveshareRelayCoordinator], ButtonEntity):
-    """Gemeinsame Basis der Board-Buttons (unique_id, Geräte-Info)."""
+    """Shared base for the board buttons (unique_id, device info)."""
 
     _attr_has_entity_name = True
     _attr_entity_category = EntityCategory.CONFIG
@@ -47,7 +47,7 @@ class _WaveshareButton(CoordinatorEntity[WaveshareRelayCoordinator], ButtonEntit
 
 
 class WaveshareTestStartButton(_WaveshareButton):
-    """Funktionstest starten."""
+    """Start the function test."""
 
     _attr_name = "Funktionstest starten"
     _attr_icon = "mdi:play-circle"
@@ -62,7 +62,7 @@ class WaveshareTestStartButton(_WaveshareButton):
 
 
 class WaveshareTestStopButton(_WaveshareButton):
-    """Funktionstest stoppen."""
+    """Stop the function test."""
 
     _attr_name = "Funktionstest stoppen"
     _attr_icon = "mdi:stop-circle"
@@ -75,7 +75,7 @@ class WaveshareTestStopButton(_WaveshareButton):
 
 
 class WaveshareAllOffButton(_WaveshareButton):
-    """Alle Relais ausschalten."""
+    """Switch all relays off."""
 
     _attr_name = "Alle Relais aus"
     _attr_icon = "mdi:power-off"
@@ -88,7 +88,7 @@ class WaveshareAllOffButton(_WaveshareButton):
 
 
 class WaveshareResetStatsButton(_WaveshareButton):
-    """Statistik zurücksetzen."""
+    """Reset statistics."""
 
     _attr_name = "Statistik zurücksetzen"
     _attr_icon = "mdi:restart"

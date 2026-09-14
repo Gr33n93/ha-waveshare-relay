@@ -1,4 +1,4 @@
-"""Konstanten für die Waveshare PoE Relay Integration."""
+"""Constants for the Waveshare PoE relay integration."""
 
 DOMAIN = "waveshare_relay"
 
@@ -10,23 +10,23 @@ CONF_POLL_INTERVAL = "poll_interval"
 CONF_RELAY_COUNT = "relay_count"
 CONF_CHANNEL_CONFIGS = "channel_configs"
 
-# OptionsFlow-Feldschlüssel
+# Options flow field keys
 CONF_CHANNEL = "channel"
 CONF_CHANNEL_NAME = "channel_name"
 CONF_CHANNEL_MODE = "betriebsart"
 CONF_PULSE_DURATION = "impulsdauer_ms"
 
-# Kanalbetriebsarten (Werte in entry.options[CONF_CHANNEL_CONFIGS])
-MODE_SWITCH = "switch"  # Dauerbetrieb
-MODE_PULSE = "pulse"  # Impuls
+# Channel modes (values stored in entry.options[CONF_CHANNEL_CONFIGS])
+MODE_SWITCH = "switch"  # continuous operation
+MODE_PULSE = "pulse"  # momentary pulse
 
-# Impulsdauer-Grenzen (Waveshare-Zeitauflösung: 100 ms)
+# Pulse duration limits (Waveshare time resolution: 100 ms)
 DEFAULT_PULSE_DURATION_MS = 500
 MIN_PULSE_DURATION_MS = 100
 MAX_PULSE_DURATION_MS = 10000
 PULSE_STEP_MS = 100
 
-# Waveshare-native Impulsadressen (FC05, Wert = Zeit in 100-ms-Ticks)
+# Waveshare native pulse addresses (FC05, value = time in 100 ms ticks)
 PULSE_ADDR_ON = 0x0200
 PULSE_ADDR_OFF = 0x0400
 

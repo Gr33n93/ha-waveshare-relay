@@ -1,6 +1,7 @@
-"""Datenmodelle: Kanalprofile für Dauerbetrieb und Impuls.
+"""Data models: channel profiles for continuous and pulse operation.
 
-Bewusst ohne Home-Assistant-Importe, damit die Struktur lokal testbar bleibt.
+Deliberately free of Home Assistant imports so the structures stay
+testable in isolation.
 """
 from __future__ import annotations
 
@@ -17,15 +18,15 @@ from .const import (
 
 
 class ChannelMode(StrEnum):
-    """Betriebsart eines Relaiskanals."""
+    """Operating mode of a relay channel."""
 
-    SWITCH = "switch"  # Dauerbetrieb
-    PULSE = "pulse"  # Impuls
+    SWITCH = "switch" # continuous operation
+    PULSE = "pulse" # momentary pulse
 
 
 @dataclass
 class ChannelConfig:
-    """Profil eines einzelnen Relaiskanals."""
+    """Profile of a single relay channel."""
 
     channel: int
     name: str
@@ -34,7 +35,7 @@ class ChannelConfig:
 
 
 def default_channel_configs(relay_count: int) -> list[ChannelConfig]:
-    """Standardprofile erzeugen: alle Kanäle im Dauerbetrieb."""
+    """Build default profiles: every channel in continuous mode."""
     return [
         ChannelConfig(channel=i, name=f"Relais {i + 1}") for i in range(relay_count)
     ]
@@ -43,11 +44,10 @@ def default_channel_configs(relay_count: int) -> list[ChannelConfig]:
 def channel_configs_from_entry(
     entry_options: dict, relay_count: int
 ) -> list[ChannelConfig]:
-    """Kanalprofile aus entry.options lesen.
+    """Read channel profiles from entry options.
 
-    Fehlende oder ungültige Einträge fallen auf Dauerbetrieb mit
-    Standardnamen zurück – ein Update ändert dadurch nichts an
-    bestehenden Installationen.
+    Missing or invalid entries fall back to continuous mode with the
+    default name, so an update never changes existing installations.
     """
     raw: dict = entry_options.get(CONF_CHANNEL_CONFIGS) or {}
     defaults = default_channel_configs(relay_count)

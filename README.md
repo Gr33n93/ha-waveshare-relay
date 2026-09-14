@@ -1,34 +1,36 @@
 # Waveshare Modbus PoE Ethernet Relay
 
+[🇩🇪 Deutsch](README.de.md) | [🇬🇧 English](README.md)
+
 ![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5?style=for-the-badge)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Custom%20Integration-18BCF2?style=for-the-badge)
 ![Release](https://img.shields.io/github/v/release/Gr33n93/ha-waveshare-relay?style=for-the-badge)
 
-Home-Assistant-Integration für Waveshare Modbus PoE Ethernet Relay Boards. Die
-Kommunikation läuft lokal per Modbus TCP.
+Home Assistant integration for Waveshare Modbus PoE Ethernet relay boards.
+Communication runs locally over Modbus TCP.
 
-## Unterstützte Geräte
+## Supported devices
 
-| Gerät | Relais |
+| Device | Relays |
 | --- | ---: |
 | Modbus POE ETH Relay | 8 |
 | Modbus POE ETH Relay 16CH | 16 |
 | Modbus POE ETH Relay 30CH | 30 |
 
-## Überblick
+## Overview
 
-| Bereich | Funktion |
+| Area | Function |
 | --- | --- |
-| Relais | Schalter für alle konfigurierten Kanäle |
-| Status | Live-Abfrage per Modbus FC01 |
-| Schalten | Relaissteuerung per Modbus FC05 |
-| Diagnose | Verbindung, Reaktionszeit, Fehler und Schreibzähler |
-| Kanäle | EIN-/AUS-Zähler und sessionbasierte Laufzeiten |
-| Wartung | Funktionstest, Statistik-Reset und "Alle Relais aus" |
+| Relays | Switch entities for every configured channel |
+| State | Live polling via Modbus FC01 |
+| Switching | Relay control via Modbus FC05 |
+| Diagnostics | Connection, response time, errors and write counters |
+| Channels | On/off counters and session-based duty times |
+| Maintenance | Function test, statistics reset and "all relays off" |
 
-## Installation über HACS
+## Installation via HACS
 
-Diese Integration ist aktuell als benutzerdefiniertes HACS-Repository nutzbar.
+This integration is available as a custom HACS repository.
 
 ```text
 https://github.com/Gr33n93/ha-waveshare-relay
@@ -36,114 +38,113 @@ https://github.com/Gr33n93/ha-waveshare-relay
 
 In HACS:
 
-1. **HACS -> Integrationen** öffnen
-2. **Custom repositories** öffnen
-3. URL eintragen
-4. Kategorie **Integration** auswählen
-5. Integration installieren
-6. Home Assistant neu starten
+1. Open **HACS -> Integrations**
+2. Open **Custom repositories**
+3. Enter the URL
+4. Choose category **Integration**
+5. Install the integration
+6. Restart Home Assistant
 
-## Einrichtung
+## Setup
 
-Nach dem Neustart in Home Assistant:
+After the restart, in Home Assistant:
 
 ```text
-Einstellungen -> Geräte & Dienste -> Integration hinzufügen -> Waveshare
+Settings -> Devices & Services -> Add Integration -> Waveshare
 ```
 
-Benötigte Daten:
+Required data:
 
-| Feld | Wert |
+| Field | Value |
 | --- | --- |
-| IP-Adresse | IP-Adresse des Relay-Boards |
+| IP address | IP address of the relay board |
 | Port | `502` |
-| Unit-ID | meistens `1` |
-| Abfrageintervall | Standard `2` Sekunden |
-| Relaisanzahl | `8`, `16` oder `30` |
+| Unit ID | usually `1` |
+| Poll interval | default `2` seconds |
+| Relay count | `8`, `16` or `30` |
 
-Beim Speichern führt Home Assistant einen Verbindungstest aus. Danach werden die
-Entities automatisch angelegt.
+On submit Home Assistant runs a connection test, then the entities are
+created automatically.
 
 ## Entities
 
-| Typ | Anzahl | Beschreibung |
+| Type | Count | Description |
 | --- | ---: | --- |
-| `switch` | Relaisanzahl | Ein Schalter pro Relais (Modus: Switch oder Pulse) |
-| `select` | Relaisanzahl | Mode-Auswahl (Switch/Pulse), in der Steuerung direkt beim Kanal |
-| `binary_sensor` | 1 | Verbindungsstatus |
-| `sensor` | 11 + 5 pro Relais | Statistik, Laufzeiten, Zähler und Teststatus |
-| `button` | 4 | Funktionstest, Alle aus, Statistik zurücksetzen |
+| `switch` | relay count | One switch per relay (mode: Switch or Pulse) |
+| `select` | relay count | Mode selector (Switch/Pulse), in the control section next to each channel |
+| `binary_sensor` | 1 | Connection status |
+| `sensor` | 11 + 5 per relay | Statistics, duty times, counters and test status |
+| `button` | 4 | Function test, all off, reset statistics |
 
-## Modus pro Kanal (Switch / Pulse)
+## Per-channel mode (Switch / Pulse)
 
-Jeder Kanal ist über die Integrationsoptionen (**Geräte & Dienste → Waveshare
-Relay → Konfigurieren**) oder direkt per Mode-Select einzeln konfigurierbar:
-Anzeigename, Modus und Impulsdauer.
+Every channel is configurable individually through the integration options
+(**Devices & Services -> Waveshare Relay -> Configure**) or directly via the
+mode select: display name, mode and pulse duration.
 
-- **Switch**: normales Ein-/Ausschalten, die Entity zeigt den echten
-  Boardzustand.
-- **Pulse**: Das Einschalten löst den nativen Waveshare-Impulsbefehl
-  aus (Modbus FC05 an Adresse `0x0200 + Kanal`, Zeit in 100-ms-Schritten). Das
-  Board schaltet nach der eingestellten Dauer selbstständig zurück – auch
-  wenn Home Assistant in der Zwischenzeit nicht erreichbar ist. Gedacht für
-  bistabile Relais bzw. Stromstoßschalter. Der Ausschalter beendet einen
-  laufenden Impuls sicher.
+- **Switch**: regular on/off switching; the entity reflects the real board
+  state.
+- **Pulse**: turning on triggers the native Waveshare pulse command
+  (Modbus FC05 at address `0x0200 + channel`, time in 100 ms steps). The
+  board switches back off by itself after the configured duration - even
+  if Home Assistant is unreachable in between. Intended for bistable
+  relays and impulse switches. Turning off safely ends a running pulse.
 
-Der Moduswechsel ändert weder Name noch Entity-ID noch Unique-ID –
-Dashboards und Automationen bleiben beim Umschalten unverändert. Zusätzliche
-Attribute (`betriebsart` mit `switch`/`pulse`, `impulsdauer_ms`,
-`letzter_impuls`) zeigen die aktuelle Konfiguration.
+Changing the mode changes neither name, entity ID nor unique ID -
+dashboards and automations keep working. Additional attributes
+(`betriebsart` with `switch`/`pulse`, `impulsdauer_ms`, `letzter_impuls`)
+expose the current configuration.
 
-### Mode direkt am Gerät / Dashboard
+### Mode directly on the device / dashboard
 
-Zusätzlich zum OptionsDialog gibt es pro Kanal eine Select-Entity
-(`select.*_mode`, angezeigt als „Relais N Mode“), mit der sich Switch/Pulse
-direkt umstellen lässt – auf der Geräteseite in der **Steuerung** direkt beim
-jeweiligen Kanal oder als Karte im Dashboard (Beispiel in
-`lovelace_dashboard.yaml`). Eine Umstellung über die Select-Entity wirkt
-identisch zum OptionsDialog: sie wird gespeichert und überlebt Neustarts.
+Besides the options dialog, every channel has a select entity
+(`select.*_mode`, shown as "Relais N Mode") to switch between Switch and
+Pulse directly - on the device page in the **control** section right next
+to the channel, or as a dashboard card (see `lovelace_dashboard.yaml`).
+Changing the mode via the select behaves exactly like the options dialog:
+it is persisted and survives restarts.
 
 ## Services
 
-| Service | Beschreibung |
+| Service | Description |
 | --- | --- |
-| `waveshare_relay.alle_aus` | Schaltet alle Relais aus |
-| `waveshare_relay.funktionstest_start` | Startet einen Kanal-Funktionstest |
-| `waveshare_relay.funktionstest_stop` | Stoppt den Funktionstest |
-| `waveshare_relay.statistik_zuruecksetzen` | Setzt Statistikwerte zurück |
+| `waveshare_relay.alle_aus` | Switches all relays off |
+| `waveshare_relay.funktionstest_start` | Starts a channel function test |
+| `waveshare_relay.funktionstest_stop` | Stops the function test |
+| `waveshare_relay.statistik_zuruecksetzen` | Resets statistics values |
 
-Alle Services akzeptieren optional ein **Zielgerät** (Geräteselector). Ohne
-Auswahl wirken sie auf alle konfigurierten Boards – bestehende Automationen
-verhalten sich weiterhin wie bisher.
+All services accept an optional **target device** (device selector).
+Without a target they act on all configured boards - existing automations
+keep behaving exactly as before.
 
-Parameter für `funktionstest_start`:
+Parameters for `funktionstest_start`:
 
-| Parameter | Standard | Beschreibung |
+| Parameter | Default | Description |
 | --- | ---: | --- |
-| `laufzeit_s` | `5` | Einschaltdauer pro Kanal |
-| `pause_s` | `0.25` | Pause zwischen Kanälen |
-| `einmalig` | `true` | Ein Durchlauf oder Dauertest |
-| `device_id` | – | Optional: Board, auf dem der Test läuft |
+| `laufzeit_s` | `5` | On time per channel |
+| `pause_s` | `0.25` | Pause between channels |
+| `einmalig` | `true` | Single pass or continuous test |
+| `device_id` | – | Optional: board the test runs on |
 
-Während eines Funktionstests sind manuelle Schaltbefehle gesperrt, damit sie
-sich nicht mit dem Testablauf überlagern. `alle_aus` bleibt als
-Sicherheitsstopp jederzeit verfügbar.
+While a function test is running, manual switch commands are blocked so
+they cannot interleave with the test sequence. `alle_aus` remains
+available at all times as a safety stop.
 
-## Verbindungsüberwachung
+## Connection monitoring
 
-Fällt das Board aus (Strom- oder Netzwerkverlust), gehen alle Entities des
-Geräts auf **Nicht verfügbar** und der Binary-Sensor **„Verbindung"**
-(`binary_sensor.*_verbindung`) auf **Aus**. Sobald das Board wieder erreichbar
-ist, verbindet sich die Integration automatisch neu – ohne Neustart. Der
-letzte Fehler steht in den Diagnose-Sensoren „Letzte Fehlermeldung" und
-„Letzter Fehler (Zeit)".
+When the board disappears (power or network loss), all entities of the
+device go **unavailable** and the **connection** binary sensor
+(`binary_sensor.*_verbindung`) turns **off**. As soon as the board is
+reachable again the integration reconnects automatically - no restart
+required. The last error is available in the diagnostic sensors "Letzte
+Fehlermeldung" and "Letzter Fehler (Zeit)".
 
-Eine aktive Benachrichtigung richtest du dir selbst per Automation ein.
-Beispiel (Benachrichtigung, wenn das Board länger als eine Minute weg ist):
+Active notifications are up to you - a ready-to-use example (notify when
+the board has been gone for more than a minute):
 
 ```yaml
 automation:
-  - alias: "Waveshare Relay Verbindung überwachen"
+  - alias: "Waveshare Relay connection monitor"
     mode: single
     trigger:
       - platform: state
@@ -154,49 +155,49 @@ automation:
       - service: notify.persistent_notification
         data:
           title: "Waveshare Relay offline"
-          message: "Das Board ist seit über einer Minute nicht erreichbar."
+          message: "The board has been unreachable for over a minute."
 ```
 
-Für eine Handy-Benachrichtigung `notify.persistent_notification` durch
-`notify.mobile_app_<gerät>` ersetzen. Die tatsächliche Entity-ID kann je nach
-Gerätename abweichen – unter **Entwicklerwerkzeuge → Zustände** nach
-`verbindung` suchen.
+For phone notifications replace `notify.persistent_notification` with
+`notify.mobile_app_<device>`. The actual entity ID may differ depending
+on your device name - search for `verbindung` under **Developer Tools ->
+States**.
 
-Hinweis: Impulskanäle (Modus „Pulse") werden bei einer Wiederherstellung
-niemals automatisch erneut ausgelöst; normale Kanäle zeigen nach der
-Wiederverbindung den tatsächlichen Boardzustand.
+Note: pulse channels (mode "Pulse") are never re-triggered automatically
+on reconnection; regular channels show the actual board state after
+reconnecting.
 
 ## Dashboard
 
-`lovelace_dashboard.yaml` enthält ein Beispiel-Dashboard für ein 8CH-Board mit:
+`lovelace_dashboard.yaml` contains an example dashboard for an 8CH board
+with:
 
-- Relaissteuerung
-- Statistik
-- Kanaldetails
-- Funktionstest
+- Relay control
+- Statistics
+- Channel details
+- Function test
 
-Die Entity-IDs können in deiner Home-Assistant-Instanz abweichen. Falls eine
-Karte nicht funktioniert, die tatsächlichen Entity-IDs unter **Geräte & Dienste**
-prüfen und im Dashboard-YAML anpassen.
+Entity IDs may differ in your Home Assistant instance. If a card does not
+work, look up the actual entity IDs under **Devices & Services** and
+adjust the dashboard YAML.
 
-## Manuelle Installation
+## Manual installation
 
-Alternativ kann der Ordner manuell kopiert werden:
+Alternatively, copy the folder manually:
 
 ```text
 custom_components/waveshare_relay -> /config/custom_components/waveshare_relay
 ```
 
-Danach Home Assistant neu starten.
+Then restart Home Assistant.
 
-## Hinweise
+## Notes
 
-- Das Board erlaubt typischerweise nur eine gleichzeitige Modbus-TCP-Verbindung.
-- Andere Modbus-Adapter oder Testtools sollten nicht parallel verbunden sein.
-- Laufzeitwerte werden sessionbasiert gezählt und nach Neustart oder Reset neu
-  begonnen.
-- Die Dauer-Sensoren schreiben sich bei jedem Relais-Wechsel fort; der
-  aktuell laufende Wert steht als Attribut `aktuell_s` zur Verfügung.
-- RS485/RTU-Boards wie das Modbus RTU Relay 4CH werden nicht unterstützt.
-- Die Integration nutzt die Modbus-Bibliothek, die Home Assistant über die
-  eingebaute Modbus-Integration bereitstellt.
+- The board typically allows only one concurrent Modbus TCP connection.
+- Other Modbus clients or test tools should not be connected in parallel.
+- Duty values are counted per session and restart after a reboot or reset.
+- Duration sensors advance on every relay change; the currently running
+  value is available as attribute `aktuell_s`.
+- RS485/RTU boards such as the Modbus RTU Relay 4CH are not supported.
+- The integration uses the Modbus library that Home Assistant provides
+  through the built-in Modbus integration.

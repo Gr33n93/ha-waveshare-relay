@@ -1,4 +1,4 @@
-"""Switch-Plattform: Relais als HA-Switches."""
+"""Switch platform: relays as HA switches."""
 from __future__ import annotations
 
 import logging
@@ -27,7 +27,7 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Switch-Entities anlegen."""
+    """Create switch entities."""
     coordinator: WaveshareRelayCoordinator = hass.data[DOMAIN][entry.entry_id]
     async_add_entities(
         WaveshareRelaySwitch(coordinator, entry, channel)
@@ -36,7 +36,7 @@ async def async_setup_entry(
 
 
 class WaveshareRelaySwitch(WaveshareChannelEntity, SwitchEntity):
-    """Ein einzelner Relais-Schalter."""
+    """A single relay switch."""
 
     def __init__(
         self,
@@ -44,7 +44,7 @@ class WaveshareRelaySwitch(WaveshareChannelEntity, SwitchEntity):
         entry: ConfigEntry,
         channel: int,
     ) -> None:
-        """Initialisierung."""
+        """Initialize the switch."""
         super().__init__(
             coordinator,
             entry,
@@ -54,28 +54,28 @@ class WaveshareRelaySwitch(WaveshareChannelEntity, SwitchEntity):
 
     @property
     def _config(self):
-        """Aktuelles Kanalprofil (Betriebsart, Name, Impulsdauer)."""
+        """Current channel profile (mode, name, pulse duration)."""
         return self.coordinator.channel_configs[self._channel]
 
     @property
     def icon(self) -> str:
-        """Icon je Betriebsart."""
+        """Icon depending on the channel mode."""
         if self._config.mode == ChannelMode.PULSE:
             return "mdi:gesture-tap-button"
         return "mdi:electric-switch"
 
     @property
     def is_on(self) -> bool:
-        """Aktueller Zustand."""
+        """Current relay state."""
         return self.coordinator.relay_states[self._channel]
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        """Zusatzattribute: Dauer, Zähler, Betriebsart.
+        """Extra attributes: durations, counters, mode.
 
-        Bewusst die eingefrorenen Werte (Stand: letzter Wechsel) statt der
-        Live-Berechnung – Attribut-Änderungen bei jedem Poll würden den
-        Recorder fluten.
+        Deliberately the frozen values (as of the last relay change)
+        instead of the live calculation - attribute changes on every
+        poll would flood the recorder.
         """
         cs = self.coordinator.channel_stats[self._channel]
         config = self._config
@@ -94,7 +94,7 @@ class WaveshareRelaySwitch(WaveshareChannelEntity, SwitchEntity):
         return attrs
 
     async def async_turn_on(self, **kwargs: Any) -> None:
-        """Dauerbetrieb: einschalten. Impuls: nativen Impuls auslösen."""
+        """Continuous mode: switch on. Pulse mode: trigger native pulse."""
         config = self._config
         if config.mode == ChannelMode.PULSE:
             await self.coordinator.async_pulse(
@@ -105,6 +105,6 @@ class WaveshareRelaySwitch(WaveshareChannelEntity, SwitchEntity):
         self.async_write_ha_state()
 
     async def async_turn_off(self, **kwargs: Any) -> None:
-        """Ausschalten; beendet auch einen laufenden Impuls."""
+        """Switch off; also safely ends a running pulse."""
         await self.coordinator.async_write_coil(self._channel, False, "HA-UI")
         self.async_write_ha_state()

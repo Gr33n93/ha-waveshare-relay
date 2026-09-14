@@ -45,15 +45,15 @@ SERVICE_TEST_SCHEMA = vol.Schema(
             vol.Coerce(float), vol.Range(min=0, max=60)
         ),
         vol.Optional("einmalig", default=True): bool,
-        # Ohne diesen Key verwirft voluptuous die Geräteauswahl und der
-        # Aufruf fehlschlaegt mit "extra keys not allowed".
+        # Without this key voluptuous rejects the device selection and
+        # the call fails with "extra keys not allowed".
         vol.Optional("device_id"): str,
     }
 )
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Integration einrichten wenn Config Entry geladen wird."""
+    """Set up the integration when a config entry is loaded."""
     hass.data.setdefault(DOMAIN, {})
 
     # Releases up to 1.1.5 stored the integration version as device firmware.
@@ -82,11 +82,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
-    # Services nur einmal global registrieren (Ziel optional wählbar)
+    # Register services globally once (optional device target)
     _register_services(hass)
 
-    # Optionsänderungen (Kanalprofile) werden zur Laufzeit übernommen –
-    # ohne Reload bleiben Statistik und Verbindung erhalten.
+    # Option changes (channel profiles) are applied at runtime - no
+    # reload, so statistics and connections are preserved.
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
 
     return True
@@ -95,7 +95,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def _async_update_listener(
     hass: HomeAssistant, entry: ConfigEntry
 ) -> None:
-    """Geänderte Kanalprofile an den laufenden Coordinator durchreichen."""
+    """Feed changed channel profiles into the running coordinator."""
     coordinator = hass.data.get(DOMAIN, {}).get(entry.entry_id)
     if not isinstance(coordinator, WaveshareRelayCoordinator):
         return
@@ -106,7 +106,7 @@ async def _async_update_listener(
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Integration entladen."""
+    """Unload the integration."""
     coordinator: WaveshareRelayCoordinator = hass.data[DOMAIN][entry.entry_id]
     await coordinator.async_shutdown()
 
@@ -114,7 +114,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if unloaded:
         hass.data[DOMAIN].pop(entry.entry_id)
 
-    # Services entfernen wenn kein Gerät mehr übrig
+    # Remove services once no device is left
     if not hass.data[DOMAIN]:
         for svc in (SERVICE_START_TEST, SERVICE_STOP_TEST, SERVICE_RESET_STATS, SERVICE_ALL_OFF):
             hass.services.async_remove(DOMAIN, svc)
@@ -123,14 +123,14 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 def _get_all_coordinators(hass: HomeAssistant) -> list[WaveshareRelayCoordinator]:
-    """Alle aktiven Coordinators zurückgeben."""
+    """Return all active coordinators."""
     return list(hass.data.get(DOMAIN, {}).values())
 
 
 def _resolve_coordinators(
     hass: HomeAssistant, call: ServiceCall
 ) -> list[WaveshareRelayCoordinator]:
-    """Coordinators des Aufrufs ermitteln: Zielgerät oder alle Boards."""
+    """Resolve the coordinators of a call: target device or all boards."""
     device_id = call.data.get("device_id")
     if not device_id:
         return _get_all_coordinators(hass)
@@ -152,7 +152,7 @@ def _resolve_coordinators(
 
 
 def _register_services(hass: HomeAssistant) -> None:
-    """Services registrieren (ohne Ziel: alle Geräte, mit Ziel: nur dieses)."""
+    """Register services (no target: all devices, with target: only it)."""
 
     if hass.services.has_service(DOMAIN, SERVICE_START_TEST):
         return  # Bereits registriert
@@ -184,4 +184,4 @@ def _register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(DOMAIN, SERVICE_RESET_STATS, handle_reset_stats)
     hass.services.async_register(DOMAIN, SERVICE_ALL_OFF, handle_all_off)
 
-    _LOGGER.info("Waveshare Relay Services registriert")
+    _LOGGER.info("Waveshare relay services registered")

@@ -1,4 +1,4 @@
-"""Sensor-Plattform: Statistik-Sensoren für Waveshare Relay."""
+"""Sensor platform: statistics sensors for the Waveshare relay."""
 from __future__ import annotations
 
 import logging
@@ -18,8 +18,8 @@ from .entity import WaveshareChannelEntity, device_info
 
 _LOGGER = logging.getLogger(__name__)
 
-# Diese Werte ändern sich bei jedem Poll (2 s). Damit sie Logbook und
-# Recorder nicht fluten, schreiben sie ihren Zustand max. einmal pro Minute.
+# These values change on every poll (2 s). To keep them from flooding
+# logbook and recorder they write their state at most once per minute.
 CHURN_UPDATE_INTERVAL = 60
 CHURNY_KEYS = {
     "abfragen_gesamt",
@@ -30,7 +30,7 @@ CHURNY_KEYS = {
     "letzter_erfolg_zeit",
 }
 
-# ── Globale Statistik-Sensoren ──
+# Board-wide statistics sensors
 GLOBAL_SENSORS: list[dict[str, Any]] = [
     {"key": "abfragen_gesamt",       "name": "Abfragen gesamt",           "icon": "mdi:counter",        "unit": None, "cls": SensorStateClass.TOTAL_INCREASING},
     {"key": "abfragen_ok",           "name": "Abfragen erfolgreich",      "icon": "mdi:check-circle",   "unit": None, "cls": SensorStateClass.TOTAL_INCREASING},
@@ -50,18 +50,18 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Sensor-Entities anlegen."""
+    """Create sensor entities."""
     coordinator: WaveshareRelayCoordinator = hass.data[DOMAIN][entry.entry_id]
     entities: list[SensorEntity] = []
 
-    # Globale Statistik
+    # Board-wide statistics
     for sd in GLOBAL_SENSORS:
         entities.append(WaveshareGlobalSensor(coordinator, entry, sd))
 
-    # Funktionstest-Status
+    # Function test status
     entities.append(WaveshareTestStatusSensor(coordinator, entry))
 
-    # Pro Kanal: EIN-Dauer, AUS-Dauer, Zähler
+    # Per channel: on/off duration, counters
     for ch in range(coordinator.relay_count):
         entities.append(WaveshareChannelDurationSensor(coordinator, entry, ch, "ein"))
         entities.append(WaveshareChannelDurationSensor(coordinator, entry, ch, "aus"))
@@ -75,7 +75,7 @@ async def async_setup_entry(
 class WaveshareGlobalSensor(
     CoordinatorEntity[WaveshareRelayCoordinator], SensorEntity
 ):
-    """Globaler Statistik-Sensor."""
+    """Board-wide statistics sensor."""
 
     _attr_has_entity_name = True
     _attr_entity_category = EntityCategory.DIAGNOSTIC
@@ -108,7 +108,7 @@ class WaveshareGlobalSensor(
 class WaveshareTestStatusSensor(
     CoordinatorEntity[WaveshareRelayCoordinator], SensorEntity
 ):
-    """Funktionstest-Status Sensor."""
+    """Function test status sensor."""
 
     _attr_has_entity_name = True
     _attr_icon = "mdi:test-tube"
@@ -136,7 +136,7 @@ class WaveshareTestStatusSensor(
 
 
 class WaveshareChannelDurationSensor(WaveshareChannelEntity, SensorEntity):
-    """Einschalt- oder Ausschaltdauer pro Kanal."""
+    """On or off duration of one channel."""
 
     _attr_native_unit_of_measurement = "s"
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
@@ -157,11 +157,11 @@ class WaveshareChannelDurationSensor(WaveshareChannelEntity, SensorEntity):
 
     @property
     def native_value(self) -> float:
-        """Kumulierte Sekunden zum Zeitpunkt des letzten Relais-Wechsels.
+        """Cumulative seconds as of the last relay change.
 
-        Bewusst ohne Live-Fortschreibung – sonst würde der Zustand bei
-        jedem Poll wechseln und Logbook/Recorder fluten. Der aktuelle
-        Live-Wert steht als Attribut `aktuell_s`.
+        Deliberately without live progression - otherwise the state
+        would change on every poll and flood logbook and recorder. The
+        current live value is exposed as attribute `aktuell_s`.
         """
         return self.coordinator.channel_stats[self._channel][
             f"{self._kind}schaltdauer_s"
@@ -176,9 +176,9 @@ class WaveshareChannelDurationSensor(WaveshareChannelEntity, SensorEntity):
 
     @callback
     def _handle_coordinator_update(self) -> None:
-        # Sofort schreiben wenn der eingefrorene Wert wechselt (Relais-
-        # wechsel); sonst das Attribut-Refresh auf 1x pro Minute drosseln,
-        # da schon reine Attribut-Änderungen Recorder-Zeilen erzeugen.
+        # Write immediately when the frozen value changes (relay toggle);
+        # otherwise throttle the attribute refresh to once per minute,
+        # because even attribute-only changes create recorder rows.
         val = self.coordinator.channel_stats[self._channel][
             f"{self._kind}schaltdauer_s"
         ]
@@ -193,7 +193,7 @@ class WaveshareChannelDurationSensor(WaveshareChannelEntity, SensorEntity):
 
 
 class WaveshareChannelCounterSensor(WaveshareChannelEntity, SensorEntity):
-    """Zähler pro Kanal (EIN/AUS/Fehler)."""
+    """Counters per channel (on/off/errors)."""
 
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
     _attr_entity_category = EntityCategory.DIAGNOSTIC

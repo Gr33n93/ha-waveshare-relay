@@ -1,4 +1,4 @@
-"""DataUpdateCoordinator für Waveshare PoE Relay – Modbus TCP."""
+"""Data update coordinator for the Waveshare PoE relay (Modbus TCP)."""
 from __future__ import annotations
 
 import asyncio
@@ -24,7 +24,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class WaveshareRelayCoordinator(DataUpdateCoordinator):
-    """Koordinator: Modbus-Polling, Statistik, Dauer-Tracking, Funktionstest."""
+    """Coordinator: Modbus polling, statistics, duty tracking, function test."""
 
     def __init__(
         self,
@@ -46,8 +46,8 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
         self.port = port
         self.unit_id = unit_id
         self.relay_count = relay_count
-        # Kanalprofile; apply_channel_configs füllt fehlende auf und
-        # verdrahtet relay_names – auch zur Laufzeit nach Optionsänderungen.
+        # Channel profiles; apply_channel_configs pads missing entries and
+        # wires relay_names - also at runtime after option changes.
         self.channel_configs: list[ChannelConfig] = []
         self.relay_names: list[str] = []
         self.apply_channel_configs(
@@ -94,10 +94,10 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
         self._test_task: asyncio.Task | None = None
 
     def apply_channel_configs(self, configs: list[ChannelConfig]) -> None:
-        """Kanalprofile übernehmen – auch zur Laufzeit ohne Reload.
+        """Adopt channel profiles - also at runtime, without a reload.
 
-        Statistik und Verbindungen bleiben dabei vollständig erhalten;
-        fehlende Kanäle fallen auf Dauerbetrieb mit Standardnamen zurück.
+        Statistics and connections are fully preserved; missing channels
+        fall back to continuous mode with the default name.
         """
         configs = list(configs)
         if len(configs) < self.relay_count:
@@ -122,7 +122,7 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
                     f"Verbindung zu {self.host}:{self.port} fehlgeschlagen"
                 )
             self.stats["verbunden"] = True
-            _LOGGER.debug("Modbus-Verbindung hergestellt: %s:%s", self.host, self.port)
+            _LOGGER.debug("Modbus connection established: %s:%s", self.host, self.port)
             return self._client
         except Exception as err:
             self.stats["verbunden"] = False
@@ -142,7 +142,7 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
     def _apply_relay_state(
         self, channel: int, new_state: bool, now_mono: float | None = None
     ) -> None:
-        """Lokalen Zustand übernehmen und Dauerzähler bei Wechsel fortschreiben."""
+        """Adopt the local state and advance duration counters on change."""
         now_mono = now_mono or time.monotonic()
         old_state = self.relay_states[channel]
         cs = self.channel_stats[channel]
@@ -162,7 +162,7 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
         self.relay_states[channel] = new_state
 
     def get_channel_stats(self, channel: int) -> dict[str, Any]:
-        """Kanalstatistik mit live fortgeschriebener aktueller Dauer zurückgeben."""
+        """Return channel stats with the current duration added live."""
         cs = dict(self.channel_stats[channel])
         last_change = cs["letzter_wechsel"]
         if last_change is not None:
@@ -173,7 +173,7 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
                 cs["ausschaltdauer_s"] = round(cs["ausschaltdauer_s"] + elapsed, 2)
         return cs
 
-    # ─────────────── Modbus Lesen (FC01) ───────────────
+    # ─────────────── Modbus read (FC01) ───────────────
 
     async def _async_update_data(self) -> dict[str, Any]:
         t0 = time.monotonic()
@@ -213,13 +213,13 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
                 self._client = None
             raise UpdateFailed(f"Abfrage fehlgeschlagen: {err}") from err
 
-    # ─────────────── Modbus Schreiben (FC05) ───────────────
+    # ─────────────── Modbus write (FC05) ───────────────
 
     def _ensure_write_allowed(self, source: str) -> None:
-        """Manuelle Befehle während des Funktionstests ablehnen.
+        """Reject manual commands while a function test is running.
 
-        Nur der Test selbst und Alle-Aus (Sicherheitsstopp) sind erlaubt,
-        damit sich manuelle Schaltvorgänge nicht mit dem Testablauf überlagern.
+        Only the test itself and all-off (safety stop) are allowed, so
+        manual switching cannot interleave with the test sequence.
         """
         if self.test_running and source not in ("Funktionstest", "alle_aus"):
             raise HomeAssistantError(
@@ -235,10 +235,10 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
         value: bool = False,
         pulse_duration_ms: int = 0,
     ) -> None:
-        """Einheitlicher Schreibpfad: FC05-Write oder nativer Impuls.
+        """Unified write path: FC05 write or native pulse.
 
-        Zentralisiert Lock, Verbindung, Statistik und Fehlerbehandlung;
-        async_write_coil und async_pulse sind die öffentlichen Fassaden.
+        Centralizes lock, connection, statistics and error handling;
+        async_write_coil and async_pulse are the public facades.
         """
         pulse = pulse_duration_ms > 0
         self._ensure_write_allowed(source)
@@ -274,8 +274,9 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
                 cs["letzter_impuls"] = _iso_now()
 
             if pulse:
-                # Optimistisch einschalten; nach Ablauf des Impulsfensters
-                # erneut lesen – das Board hat dann selbst abgeschaltet.
+                # Optimistically switch on; after the pulse window the
+                # board has already switched itself off again and is
+                # read back through the scheduled refresh.
                 self._apply_relay_state(channel, True)
             else:
                 self._apply_relay_state(channel, value)
@@ -290,25 +291,25 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
             self.stats["letzte_fehlermeldung"] = str(err)
             self.stats["letzter_fehler_zeit"] = _iso_now()
             _LOGGER.error(
-                "%s Kanal %d fehlgeschlagen: %s",
-                "Impuls" if pulse else "Schreiben", channel + 1, err,
+                "%s channel %d failed: %s",
+                "Pulse" if pulse else "Write", channel + 1, err,
             )
             raise
 
     async def async_write_coil(
         self, channel: int, value: bool, source: str = "manuell"
     ) -> None:
-        """Relais dauerhaft ein- oder ausschalten."""
+        """Switch a relay permanently on or off."""
         await self._async_write(channel, source, value=value)
 
     async def async_pulse(
         self, channel: int, duration_ms: int, source: str = "HA-UI"
     ) -> None:
-        """Nativen Waveshare-Impuls auslösen; das Board schaltet selbst zurück."""
+        """Trigger a native Waveshare pulse; the board switches back off."""
         await self._async_write(channel, source, pulse_duration_ms=duration_ms)
 
     def _schedule_pulse_refresh(self, channel: int, duration_ms: int) -> None:
-        """Nach dem Impulsfenster den Boardzustand erneut abfragen."""
+        """Read the board state again after the pulse window."""
         old = self._pulse_timers.pop(channel, None)
         if old is not None:
             old()
@@ -327,14 +328,14 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
             try:
                 await self.async_write_coil(ch, False, "alle_aus")
             except Exception as err:
-                _LOGGER.warning("Alle-Aus: Kanal %d Fehler: %s", ch + 1, err)
+                _LOGGER.warning("All-off: channel %d error: %s", ch + 1, err)
                 errors.append(f"Kanal {ch + 1}: {err}")
         if errors:
             raise HomeAssistantError(
                 "Alle-Aus unvollständig: " + "; ".join(errors)
             )
 
-    # ─────────────── Funktionstest ───────────────
+    # ─────────────── Function test ───────────────
 
     async def async_start_test(
         self,
@@ -343,11 +344,11 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
         einmalig: bool = True,
     ) -> None:
         if self.test_running:
-            _LOGGER.warning("Funktionstest läuft bereits")
+            _LOGGER.warning("Function test already running")
             return
         self.test_stop = False
-        # Synchron setzen, bevor der Task existiert – sonst könnten zwei
-        # nahezu gleichzeitige Starts zwei Tests erzeugen.
+        # Set synchronously before the task exists - otherwise two
+        # nearly simultaneous starts could create two tests.
         self.test_running = True
         try:
             self._test_task = self.hass.async_create_task(
@@ -362,7 +363,7 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
     ) -> None:
         self.test_current_channel = 0
         _LOGGER.info(
-            "Funktionstest gestartet: Laufzeit=%.1fs, Pause=%.2fs, Einmalig=%s",
+            "Function test started: runtime=%.1fs, pause=%.2fs, once=%s",
             laufzeit_s, pause_s, einmalig,
         )
         try:
@@ -385,9 +386,9 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
                 if einmalig:
                     break
         except asyncio.CancelledError:
-            _LOGGER.info("Funktionstest abgebrochen")
+            _LOGGER.info("Function test cancelled")
         except Exception as err:
-            _LOGGER.error("Funktionstest-Fehler: %s", err)
+            _LOGGER.error("Function test error: %s", err)
         finally:
             try:
                 await self.async_all_off()
@@ -398,7 +399,7 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
             self.async_set_updated_data(
                 {"relay_states": self.relay_states, "stats": self.stats}
             )
-            _LOGGER.info("Funktionstest beendet")
+            _LOGGER.info("Function test finished")
 
     async def async_stop_test(self) -> None:
         self.test_stop = True
@@ -408,12 +409,12 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
             with suppress(asyncio.CancelledError):
                 await task
         self._test_task = None
-        # Auch ein Task, der vor seinem ersten Schritt abgebrochen wurde,
-        # darf den Test-Flag nicht dauerhaft setzen (sonst kein Neustart mehr).
+        # Even a task cancelled before its first step must not leave the
+        # running flag set (otherwise no test could ever start again).
         self.test_running = False
         self.test_current_channel = 0
 
-    # ─────────────── Statistik zurücksetzen ───────────────
+    # ─────────────── Reset statistics ───────────────
 
     def reset_stats(self) -> None:
         connected = self.stats.get("verbunden", False)
@@ -439,7 +440,7 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
         self.async_set_updated_data(
             {"relay_states": self.relay_states, "stats": self.stats}
         )
-        _LOGGER.info("Statistik zurückgesetzt")
+        _LOGGER.info("Statistics reset")
 
 
 def _iso_now() -> str:

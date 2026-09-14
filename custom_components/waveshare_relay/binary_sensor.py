@@ -1,4 +1,4 @@
-"""Binary Sensor: Verbindungsstatus zum Relay-Board."""
+"""Binary sensor: connection status of the relay board."""
 from __future__ import annotations
 
 from homeassistant.components.binary_sensor import (
@@ -21,7 +21,7 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Binary Sensor anlegen."""
+    """Create the connection binary sensor."""
     coordinator: WaveshareRelayCoordinator = hass.data[DOMAIN][entry.entry_id]
     async_add_entities([WaveshareConnectionSensor(coordinator, entry)])
 
@@ -29,7 +29,7 @@ async def async_setup_entry(
 class WaveshareConnectionSensor(
     CoordinatorEntity[WaveshareRelayCoordinator], BinarySensorEntity
 ):
-    """Verbindungsstatus zum Relay-Board."""
+    """Connection status of the relay board."""
 
     _attr_has_entity_name = True
     _attr_name = "Verbindung"
@@ -44,5 +44,5 @@ class WaveshareConnectionSensor(
 
     @property
     def is_on(self) -> bool:
-        """Verbunden, wenn der letzte Abruf erfolgreich war."""
+        """Connected when the last poll succeeded."""
         return self.coordinator.last_update_success

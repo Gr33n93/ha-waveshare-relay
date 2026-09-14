@@ -1,12 +1,12 @@
-"""Kompatibilitätsschicht für verschiedene pymodbus-Versionen.
+"""Compatibility layer for various pymodbus versions.
 
 pymodbus 3.6-3.8: slave=
-pymodbus 3.9-3.10: slave= (unit= wirft Fehler)
-pymodbus 3.11+: device_id= (slave= entfernt)
+pymodbus 3.9-3.10: slave= (unit= raises)
+pymodbus 3.11+: device_id= (slave= removed)
 pymodbus 4.0+: device_id=
 
-Der einmal erkannte Unit-Parameter wird module-global gemerkt; alle
-Aufrufe laufen durch _call(), sodass die Erkennung nur eine Stelle hat.
+The unit parameter is detected once and cached module-wide; every call
+goes through _call(), so version handling lives in exactly one place.
 """
 from __future__ import annotations
 
@@ -22,13 +22,13 @@ except ImportError:  # pymodbus 3.6-3.8
 
 _LOGGER = logging.getLogger(__name__)
 
-# Wird beim ersten erfolgreichen Aufruf gesetzt: "device_id", "slave"
-# oder "__none__" (pymodbus ohne Unit-Parameter).
+# Set on the first successful call: "device_id", "slave" or "__none__"
+# for pymodbus versions without a unit parameter.
 _UNIT_KWARG: str | None = None
 
 
 async def _call(client: AsyncModbusTcpClient, method: str, *args, unit_id: int, **kwargs):
-    """Client-Methode mit versionstabilem Unit-Parameter aufrufen."""
+    """Call a client method with a version-stable unit parameter."""
     global _UNIT_KWARG
 
     if _UNIT_KWARG is None:
@@ -36,12 +36,12 @@ async def _call(client: AsyncModbusTcpClient, method: str, *args, unit_id: int, 
             try:
                 result = await getattr(client, method)(*args, **kwargs, **{kwarg: unit_id})
                 _UNIT_KWARG = kwarg
-                _LOGGER.info("pymodbus nutzt '%s' als Unit-Parameter", kwarg)
+                _LOGGER.info("pymodbus uses '%s' as unit parameter", kwarg)
                 return result
             except TypeError:
-                _LOGGER.debug("pymodbus akzeptiert '%s' nicht, versuche nächsten", kwarg)
+                _LOGGER.debug("pymodbus does not accept '%s', trying next", kwarg)
         _LOGGER.warning(
-            "pymodbus: weder 'device_id' noch 'slave' akzeptiert – nutze Default"
+            "pymodbus accepts neither 'device_id' nor 'slave' - using default"
         )
         _UNIT_KWARG = "__none__"
 
@@ -56,7 +56,7 @@ async def read_coils_compat(
     count: int,
     unit_id: int,
 ):
-    """read_coils() kompatibel mit allen pymodbus-Versionen."""
+    """read_coils() compatible with all pymodbus versions."""
     return await _call(client, "read_coils", address, count=count, unit_id=unit_id)
 
 
@@ -66,17 +66,17 @@ async def write_coil_compat(
     value: bool,
     unit_id: int,
 ):
-    """write_coil() kompatibel mit allen pymodbus-Versionen."""
+    """write_coil() compatible with all pymodbus versions."""
     return await _call(client, "write_coil", address, value, unit_id=unit_id)
 
 
 def _build_pulse_pdu(address: int, ticks: int, unit_id: int):
-    """WriteSingleCoil-PDU mit Impulszeit als Wertfeld erzeugen.
+    """Build a WriteSingleCoil PDU carrying the pulse time as value.
 
-    Waveshare-Spezialform: FC05 an 0x0200+Kanal, wobei das eigentliche
-    Wertfeld nicht 0xFF00/0x0000 trägt, sondern die Impulszeit in
-    100-ms-Ticks. pymodbus kodiert nur Bool-Werte, deshalb wird das
-    Wertfeld nach dem Aufbau der PDU gesetzt.
+    Waveshare special form: FC05 at 0x0200+channel, where the value
+    field does not carry 0xFF00/0x0000 but the pulse time in 100 ms
+    ticks. pymodbus only encodes boolean values, so the value field is
+    replaced after building the PDU.
     """
     for kwargs in ({"dev_id": unit_id}, {"device_id": unit_id}, {"slave": unit_id}):
         try:
@@ -85,7 +85,7 @@ def _build_pulse_pdu(address: int, ticks: int, unit_id: int):
         except TypeError:
             continue
     else:
-        # pymodbus 3.6-3.8: value= statt bits=
+        # pymodbus 3.6-3.8: value= instead of bits=
         pdu = WriteSingleCoilRequest(address=address, value=True)
 
     pdu.encode = lambda: struct.pack(">HH", address, ticks)
@@ -98,10 +98,10 @@ async def write_pulse_compat(
     duration_ms: int,
     unit_id: int,
 ):
-    """Waveshare-nativen Impuls auslösen (FC05 mit Zeitwert).
+    """Trigger the native Waveshare pulse (FC05 with a time value).
 
-    Das Board schaltet nach Ablauf der Zeit selbstständig zurück –
-    unabhängig von Home Assistant. Rückgabe wie write_coil().
+    The board switches back off by itself when the time elapses,
+    independent of Home Assistant. Returns like write_coil().
     """
     ticks = max(1, duration_ms // 100)
     pdu = _build_pulse_pdu(address, ticks, unit_id)
