@@ -2,7 +2,7 @@
 
 [🇩🇪 Deutsch](README.de.md) | [🇬🇧 English](README.md)
 
-![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5?style=for-the-badge)
+[![HACS Default](https://img.shields.io/badge/HACS-Default-41BDF5?style=for-the-badge)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Gr33n93&repository=ha-waveshare-relay&category=integration)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Custom%20Integration-18BCF2?style=for-the-badge)
 ![Release](https://img.shields.io/github/v/release/Gr33n93/ha-waveshare-relay?style=for-the-badge)
 
@@ -30,20 +30,22 @@ Kommunikation läuft lokal per Modbus TCP.
 
 ## Installation über HACS
 
-Diese Integration ist aktuell als benutzerdefiniertes HACS-Repository nutzbar.
+Diese Integration ist im [HACS-Standardverzeichnis](https://github.com/hacs/default/blob/master/integration)
+enthalten und direkt über die HACS-Suche verfügbar.
 
-```text
-https://github.com/Gr33n93/ha-waveshare-relay
-```
+Voraussetzung: HACS ist in Home Assistant installiert und eingerichtet.
 
-In HACS:
+Mit diesem Button öffnest du die Integration direkt in HACS:
 
-1. **HACS -> Integrationen** öffnen
-2. **Custom repositories** öffnen
-3. URL eintragen
-4. Kategorie **Integration** auswählen
-5. Integration installieren
-6. Home Assistant neu starten
+[![Integration in HACS öffnen](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Gr33n93&repository=ha-waveshare-relay&category=integration)
+
+Oder öffne HACS über die Seitenleiste in Home Assistant:
+
+1. Nach **Waveshare Modbus PoE Ethernet Relay** suchen.
+2. Den passenden Eintrag öffnen.
+3. **Herunterladen / Download** auswählen und den Download bestätigen.
+4. Home Assistant neu starten.
+5. Die Integration wie unter [Einrichtung](#einrichtung) beschrieben hinzufügen.
 
 ## Einrichtung
 
@@ -204,3 +206,11 @@ Danach Home Assistant neu starten.
 - RS485/RTU-Boards wie das Modbus RTU Relay 4CH werden nicht unterstützt.
 - Die Integration nutzt die Modbus-Bibliothek, die Home Assistant über die
   eingebaute Modbus-Integration bereitstellt.
+
+## Entwicklung unterstützen
+
+Wenn dir diese Integration hilft, kannst du meine Arbeit mit einem Kaffee
+unterstützen. Dein freiwilliger Beitrag hilft bei Weiterentwicklung, Pflege und
+Tests mit echter Hardware.
+
+[☕ Auf Ko-fi unterstützen](https://ko-fi.com/nilsarnold)

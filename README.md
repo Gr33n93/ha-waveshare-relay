@@ -2,7 +2,7 @@
 
 [🇩🇪 Deutsch](README.de.md) | [🇬🇧 English](README.md)
 
-![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5?style=for-the-badge)
+[![HACS Default](https://img.shields.io/badge/HACS-Default-41BDF5?style=for-the-badge)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Gr33n93&repository=ha-waveshare-relay&category=integration)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Custom%20Integration-18BCF2?style=for-the-badge)
 ![Release](https://img.shields.io/github/v/release/Gr33n93/ha-waveshare-relay?style=for-the-badge)
 
@@ -28,22 +28,24 @@ Communication runs locally over Modbus TCP.
 | Channels | On/off counters and session-based duty times |
 | Maintenance | Function test, statistics reset and "all relays off" |
 
-## Installation via HACS
+## Installation through HACS
 
-This integration is available as a custom HACS repository.
+This integration is included in the [HACS default repository](https://github.com/hacs/default/blob/master/integration)
+and is available directly through HACS search.
 
-```text
-https://github.com/Gr33n93/ha-waveshare-relay
-```
+Prerequisite: HACS must be installed and configured in Home Assistant.
 
-In HACS:
+Use this button to open the integration directly in HACS:
 
-1. Open **HACS -> Integrations**
-2. Open **Custom repositories**
-3. Enter the URL
-4. Choose category **Integration**
-5. Install the integration
-6. Restart Home Assistant
+[![Open your Home Assistant instance and open this repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Gr33n93&repository=ha-waveshare-relay&category=integration)
+
+Alternatively, open HACS from the Home Assistant sidebar:
+
+1. Search for **Waveshare Modbus PoE Ethernet Relay**.
+2. Open the matching entry.
+3. Select **Download** and confirm the download.
+4. Restart Home Assistant.
+5. Add the integration as described under [Setup](#setup).
 
 ## Setup
 
@@ -204,3 +206,11 @@ Then restart Home Assistant.
 - RS485/RTU boards such as the Modbus RTU Relay 4CH are not supported.
 - The integration uses the Modbus library that Home Assistant provides
   through the built-in Modbus integration.
+
+## Support development
+
+If this integration helps you, you can support my work with a coffee. Your
+voluntary contribution helps fund development, maintenance, and testing with
+real hardware.
+
+[☕ Support me on Ko-fi](https://ko-fi.com/nilsarnold)
