@@ -86,7 +86,7 @@ class WaveshareRelaySwitch(WaveshareChannelEntity, SwitchEntity):
             "aus_zaehler": cs["aus_zaehler"],
             "schreibfehler": cs["schreibfehler"],
             "letzter_befehl": cs["letzter_befehl"],
-            "betriebsart": "pulse" if config.mode == ChannelMode.PULSE else "switch",
+            "betriebsart": str(config.mode),
         }
         if config.mode == ChannelMode.PULSE:
             attrs["impulsdauer_ms"] = config.pulse_duration_ms

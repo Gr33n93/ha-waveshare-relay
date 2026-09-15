@@ -151,37 +151,39 @@ def _resolve_coordinators(
     return coordinators
 
 
+async def _action_start_test(coordinator, data: dict) -> None:
+    await coordinator.async_start_test(
+        laufzeit_s=data.get("laufzeit_s", 5.0),
+        pause_s=data.get("pause_s", 0.25),
+        einmalig=data.get("einmalig", True),
+    )
+
+
+async def _action_reset_stats(coordinator, data: dict) -> None:
+    coordinator.reset_stats()
+
+
+# service -> coordinator action; dispatch resolves the target devices
+_SERVICE_ACTIONS = {
+    SERVICE_START_TEST: _action_start_test,
+    SERVICE_STOP_TEST: lambda coord, data: coord.async_stop_test(),
+    SERVICE_RESET_STATS: _action_reset_stats,
+    SERVICE_ALL_OFF: lambda coord, data: coord.async_all_off(),
+}
+
+
 def _register_services(hass: HomeAssistant) -> None:
     """Register services (no target: all devices, with target: only it)."""
 
     if hass.services.has_service(DOMAIN, SERVICE_START_TEST):
-        return  # Bereits registriert
+        return  # Already registered
 
-    async def handle_start_test(call: ServiceCall) -> None:
+    async def dispatch(call: ServiceCall) -> None:
         for coord in _resolve_coordinators(hass, call):
-            await coord.async_start_test(
-                laufzeit_s=call.data.get("laufzeit_s", 5.0),
-                pause_s=call.data.get("pause_s", 0.25),
-                einmalig=call.data.get("einmalig", True),
-            )
+            await _SERVICE_ACTIONS[call.service](coord, call.data)
 
-    async def handle_stop_test(call: ServiceCall) -> None:
-        for coord in _resolve_coordinators(hass, call):
-            await coord.async_stop_test()
-
-    async def handle_reset_stats(call: ServiceCall) -> None:
-        for coord in _resolve_coordinators(hass, call):
-            coord.reset_stats()
-
-    async def handle_all_off(call: ServiceCall) -> None:
-        for coord in _resolve_coordinators(hass, call):
-            await coord.async_all_off()
-
-    hass.services.async_register(
-        DOMAIN, SERVICE_START_TEST, handle_start_test, schema=SERVICE_TEST_SCHEMA
-    )
-    hass.services.async_register(DOMAIN, SERVICE_STOP_TEST, handle_stop_test)
-    hass.services.async_register(DOMAIN, SERVICE_RESET_STATS, handle_reset_stats)
-    hass.services.async_register(DOMAIN, SERVICE_ALL_OFF, handle_all_off)
+    for service, action in _SERVICE_ACTIONS.items():
+        schema = SERVICE_TEST_SCHEMA if service == SERVICE_START_TEST else None
+        hass.services.async_register(DOMAIN, service, dispatch, schema=schema)
 
     _LOGGER.info("Waveshare relay services registered")

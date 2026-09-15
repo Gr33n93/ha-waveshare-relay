@@ -80,24 +80,29 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class WaveshareGlobalSensor(
-    CoordinatorEntity[WaveshareRelayCoordinator], SensorEntity
-):
-    """Board-wide statistics sensor."""
+class _BoardSensor(CoordinatorEntity[WaveshareRelayCoordinator], SensorEntity):
+    """Shared base for board-wide sensors (unique_id, name, device info)."""
 
     _attr_has_entity_name = True
     _attr_entity_category = EntityCategory.DIAGNOSTIC
 
-    def __init__(self, coordinator, entry, sdef: dict) -> None:
+    def __init__(self, coordinator, entry, key: str, name: str) -> None:
         super().__init__(coordinator)
+        self._attr_unique_id = f"{entry.entry_id}_{key}"
+        self._attr_name = name
+        self._attr_device_info = device_info(entry, coordinator)
+
+
+class WaveshareGlobalSensor(_BoardSensor):
+    """Board-wide statistics sensor."""
+
+    def __init__(self, coordinator, entry, sdef: dict) -> None:
+        super().__init__(coordinator, entry, f"stat_{sdef['key']}", sdef["name"])
         self._key = sdef["key"]
         self._last_write = 0.0
-        self._attr_unique_id = f"{entry.entry_id}_stat_{self._key}"
-        self._attr_name = sdef["name"]
         self._attr_icon = sdef["icon"]
         self._attr_native_unit_of_measurement = sdef["unit"]
         self._attr_state_class = sdef["cls"]
-        self._attr_device_info = device_info(entry, coordinator)
 
     @property
     def native_value(self) -> Any:
@@ -113,20 +118,13 @@ class WaveshareGlobalSensor(
         self.async_write_ha_state()
 
 
-class WaveshareTestStatusSensor(
-    CoordinatorEntity[WaveshareRelayCoordinator], SensorEntity
-):
+class WaveshareTestStatusSensor(_BoardSensor):
     """Function test status sensor."""
 
-    _attr_has_entity_name = True
     _attr_icon = "mdi:test-tube"
-    _attr_entity_category = EntityCategory.DIAGNOSTIC
 
     def __init__(self, coordinator, entry) -> None:
-        super().__init__(coordinator)
-        self._attr_unique_id = f"{entry.entry_id}_test_status"
-        self._attr_name = "Funktionstest"
-        self._attr_device_info = device_info(entry, coordinator)
+        super().__init__(coordinator, entry, "test_status", "Funktionstest")
 
     @property
     def native_value(self) -> str:
@@ -143,25 +141,18 @@ class WaveshareTestStatusSensor(
         }
 
 
-class WaveshareFirstSeenSensor(
-    CoordinatorEntity[WaveshareRelayCoordinator], SensorEntity
-):
+class WaveshareFirstSeenSensor(_BoardSensor):
     """Date of the first successful board contact (board aging).
 
     Survives statistics resets and re-adding the board because it is
     persisted with the MAC-keyed statistics snapshot.
     """
 
-    _attr_has_entity_name = True
-    _attr_name = "Erste Verbindung"
     _attr_device_class = SensorDeviceClass.TIMESTAMP
-    _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_icon = "mdi:calendar-clock"
 
     def __init__(self, coordinator, entry) -> None:
-        super().__init__(coordinator)
-        self._attr_unique_id = f"{entry.entry_id}_first_seen"
-        self._attr_device_info = device_info(entry, coordinator)
+        super().__init__(coordinator, entry, "first_seen", "Erste Verbindung")
 
     @property
     def native_value(self) -> Any:
@@ -233,24 +224,24 @@ class WaveshareChannelCounterSensor(WaveshareChannelEntity, SensorEntity):
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
     _attr_entity_category = EntityCategory.DIAGNOSTIC
 
-    _LABELS = {"ein": "EIN-Zähler", "aus": "AUS-Zähler", "fehler": "Schreibfehler"}
-    _ICONS = {
-        "ein": "mdi:toggle-switch",
-        "aus": "mdi:toggle-switch-off",
-        "fehler": "mdi:alert-octagon",
+    # kind -> (label, icon, statistics key); one row per counter flavour
+    _KINDS = {
+        "ein": ("EIN-Zähler", "mdi:toggle-switch", "ein_zaehler"),
+        "aus": ("AUS-Zähler", "mdi:toggle-switch-off", "aus_zaehler"),
+        "fehler": ("Schreibfehler", "mdi:alert-octagon", "schreibfehler"),
     }
-    _STAT_KEYS = {"ein": "ein_zaehler", "aus": "aus_zaehler", "fehler": "schreibfehler"}
 
     def __init__(self, coordinator, entry, channel: int, kind: str) -> None:
+        label, icon, stat_key = self._KINDS[kind]
         super().__init__(
             coordinator,
             entry,
             channel,
             unique_id=f"{entry.entry_id}_ch{channel + 1}_{kind}_cnt",
-            name_suffix=self._LABELS[kind],
+            name_suffix=label,
         )
-        self._stat_key = self._STAT_KEYS[kind]
-        self._attr_icon = self._ICONS[kind]
+        self._stat_key = stat_key
+        self._attr_icon = icon
 
     @property
     def native_value(self) -> int:

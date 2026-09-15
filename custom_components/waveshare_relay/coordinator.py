@@ -24,6 +24,38 @@ from .storage import SAVE_INTERVAL, WaveshareStatsStore, resolve_mac
 _LOGGER = logging.getLogger(__name__)
 
 
+def _fresh_stats() -> dict[str, Any]:
+    """Board statistics template - single source for init and reset."""
+    return {
+        "abfragen_gesamt": 0,
+        "abfragen_ok": 0,
+        "abfragen_fehler": 0,
+        "letzte_abfrage_ms": 0.0,
+        "schreibvorgaenge_gesamt": 0,
+        "schreiben_ok": 0,
+        "schreiben_fehler": 0,
+        "letzte_fehlermeldung": "",
+        "letzter_fehler_zeit": "",
+        "letzter_erfolg_zeit": "",
+        "verbunden": False,
+    }
+
+
+def _fresh_channel_stats() -> dict[str, Any]:
+    """Channel statistics template - single source for init and reset."""
+    return {
+        "ein_zaehler": 0,
+        "aus_zaehler": 0,
+        "schreibfehler": 0,
+        "letzter_befehl": "",
+        "letzter_impuls": "",
+        "zustand": False,
+        "letzter_wechsel": None,
+        "einschaltdauer_s": 0.0,
+        "ausschaltdauer_s": 0.0,
+    }
+
+
 class WaveshareRelayCoordinator(DataUpdateCoordinator):
     """Coordinator: Modbus polling, statistics, duty tracking, function test."""
 
@@ -60,34 +92,10 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
         self._pulse_timers: dict[int, Any] = {}
 
         self.relay_states: list[bool] = [False] * self.relay_count
-
-        self.stats: dict[str, Any] = {
-            "abfragen_gesamt": 0,
-            "abfragen_ok": 0,
-            "abfragen_fehler": 0,
-            "letzte_abfrage_ms": 0.0,
-            "schreibvorgaenge_gesamt": 0,
-            "schreiben_ok": 0,
-            "schreiben_fehler": 0,
-            "letzte_fehlermeldung": "",
-            "letzter_fehler_zeit": "",
-            "letzter_erfolg_zeit": "",
-            "verbunden": False,
-        }
-
-        self.channel_stats: list[dict[str, Any]] = []
-        for _ in range(self.relay_count):
-            self.channel_stats.append({
-                "ein_zaehler": 0,
-                "aus_zaehler": 0,
-                "schreibfehler": 0,
-                "letzter_befehl": "",
-                "letzter_impuls": "",
-                "zustand": False,
-                "letzter_wechsel": None,
-                "einschaltdauer_s": 0.0,
-                "ausschaltdauer_s": 0.0,
-            })
+        self.stats = _fresh_stats()
+        self.channel_stats = [
+            _fresh_channel_stats() for _ in range(self.relay_count)
+        ]
 
         self.test_running = False
         self.test_stop = False
@@ -486,25 +494,13 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
 
     def reset_stats(self) -> None:
         connected = self.stats.get("verbunden", False)
-        for key in self.stats:
-            if isinstance(self.stats[key], bool):
-                self.stats[key] = False
-            elif isinstance(self.stats[key], (int, float)):
-                self.stats[key] = 0
-            elif isinstance(self.stats[key], str):
-                self.stats[key] = ""
+        self.stats = _fresh_stats()
         self.stats["verbunden"] = connected
         now_mono = time.monotonic()
-        for index, cs in enumerate(self.channel_stats):
-            cs["ein_zaehler"] = 0
-            cs["aus_zaehler"] = 0
-            cs["schreibfehler"] = 0
-            cs["letzter_befehl"] = ""
-            cs["letzter_impuls"] = ""
-            cs["zustand"] = self.relay_states[index]
-            cs["einschaltdauer_s"] = 0.0
-            cs["ausschaltdauer_s"] = 0.0
-            cs["letzter_wechsel"] = now_mono
+        for index in range(self.relay_count):
+            self.channel_stats[index] = _fresh_channel_stats()
+            self.channel_stats[index]["zustand"] = self.relay_states[index]
+            self.channel_stats[index]["letzter_wechsel"] = now_mono
         self.async_set_updated_data(
             {"relay_states": self.relay_states, "stats": self.stats}
         )
