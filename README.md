@@ -73,7 +73,7 @@ created automatically.
 | `switch` | relay count | One switch per relay (mode: Switch or Pulse) |
 | `select` | relay count | Mode selector (Switch/Pulse), in the control section next to each channel |
 | `binary_sensor` | 1 | Connection status |
-| `sensor` | 11 + 5 per relay | Statistics, duty times, counters and test status |
+| `sensor` | 12 + 5 per relay | Statistics, duty times, counters and test status |
 | `button` | 4 | Function test, all off, reset statistics |
 
 ## Per-channel mode (Switch / Pulse)

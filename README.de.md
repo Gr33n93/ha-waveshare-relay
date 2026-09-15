@@ -73,7 +73,7 @@ Entities automatisch angelegt.
 | `switch` | Relaisanzahl | Ein Schalter pro Relais (Modus: Switch oder Pulse) |
 | `select` | Relaisanzahl | Mode-Auswahl (Switch/Pulse), in der Steuerung direkt beim Kanal |
 | `binary_sensor` | 1 | Verbindungsstatus |
-| `sensor` | 11 + 5 pro Relais | Statistik, Laufzeiten, Zähler und Teststatus |
+| `sensor` | 12 + 5 pro Relais | Statistik, Laufzeiten, Zähler und Teststatus |
 | `button` | 4 | Funktionstest, Alle aus, Statistik zurücksetzen |
 
 ## Modus pro Kanal (Switch / Pulse)
