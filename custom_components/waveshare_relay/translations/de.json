@@ -14,7 +14,7 @@
       }
     },
     "error": {
-      "cannot_connect": "Verbindung fehlgeschlagen – IP, Port und Unit-ID prüfen.",
+      "cannot_connect": "Verbindung fehlgeschlagen – IP, Port und Unit-ID prüfen. Hinweis: Das Board erlaubt nur eine Modbus-Verbindung gleichzeitig.",
       "invalid_host": "Bitte eine gültige IP-Adresse eingeben."
     },
     "abort": {
@@ -37,6 +37,60 @@
           "channel_name": "Anzeigename",
           "betriebsart": "Modus (Switch/Pulse)",
           "impulsdauer_ms": "Impulsdauer (ms)"
+        }
+      }
+    }
+  },
+  "services": {
+    "funktionstest_start": {
+      "name": "Funktionstest starten",
+      "description": "Startet einen One-Hot-Funktionstest: Jeder Kanal wird nacheinander ein- und wieder ausgeschaltet. Ohne Geräteauswahl laufen alle Boards.",
+      "fields": {
+        "laufzeit_s": {
+          "name": "Laufzeit pro Kanal (s)",
+          "description": "Wie lange jedes Relais eingeschaltet bleibt."
+        },
+        "pause_s": {
+          "name": "Pause zwischen Kanälen (s)",
+          "description": "Wartezeit nach dem Ausschalten bevor der nächste Kanal drankommt."
+        },
+        "einmalig": {
+          "name": "Nur ein Durchlauf",
+          "description": "Wenn aktiv, wird der Test nach einem kompletten Durchlauf beendet. Sonst Endlosschleife bis manuell gestoppt."
+        },
+        "device_id": {
+          "name": "Gerät",
+          "description": "Board, auf dem der Test läuft. Leer lassen für alle Boards. Während des Tests sind manuelle Schaltbefehle gesperrt."
+        }
+      }
+    },
+    "funktionstest_stop": {
+      "name": "Funktionstest stoppen",
+      "description": "Stoppt einen laufenden Funktionstest und schaltet alle Relais aus. Ohne Geräteauswahl auf allen Boards.",
+      "fields": {
+        "device_id": {
+          "name": "Gerät",
+          "description": "Board, dessen Test gestoppt wird. Leer lassen für alle Boards."
+        }
+      }
+    },
+    "statistik_zuruecksetzen": {
+      "name": "Statistik zurücksetzen",
+      "description": "Setzt alle Zähler und Dauer-Werte auf 0 zurück. Ohne Geräteauswahl auf allen Boards.",
+      "fields": {
+        "device_id": {
+          "name": "Gerät",
+          "description": "Board, dessen Statistik zurückgesetzt wird. Leer lassen für alle Boards."
+        }
+      }
+    },
+    "alle_aus": {
+      "name": "Alle Relais aus",
+      "description": "Schaltet alle Relais sofort aus. Ohne Geräteauswahl auf allen Boards. Bleibt auch während eines Funktionstests verfügbar (Sicherheitsstopp).",
+      "fields": {
+        "device_id": {
+          "name": "Gerät",
+          "description": "Board, das ausgeschaltet wird. Leer lassen für alle Boards."
         }
       }
     }

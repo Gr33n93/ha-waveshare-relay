@@ -2,41 +2,41 @@
   "config": {
     "step": {
       "user": {
-        "title": "Waveshare PoE Relay verbinden",
-        "description": "🔌 Verbindungsdaten des Relay-Boards eingeben.\n\nEs wird automatisch ein Verbindungstest durchgeführt.",
+        "title": "Connect Waveshare PoE Relay",
+        "description": "🔌 Enter the relay board connection data.\n\nA connection test is performed automatically.",
         "data": {
-          "host": "IP-Adresse",
-          "port": "Modbus TCP Port",
-          "unit_id": "Modbus Unit-ID",
-          "poll_interval": "Abfrageintervall (Sekunden)",
-          "relay_count": "Relaisanzahl"
+          "host": "IP address",
+          "port": "Modbus TCP port",
+          "unit_id": "Modbus unit ID",
+          "poll_interval": "Poll interval (seconds)",
+          "relay_count": "Relay count"
         }
       }
     },
     "error": {
-      "cannot_connect": "Verbindung fehlgeschlagen – IP, Port und Unit-ID prüfen.",
-      "invalid_host": "Bitte eine gültige IP-Adresse eingeben."
+      "cannot_connect": "Connection failed - check IP, port and unit ID. Note that the board only allows one Modbus connection at a time.",
+      "invalid_host": "Please enter a valid IP address."
     },
     "abort": {
-      "already_configured": "Dieses Board ist bereits konfiguriert."
+      "already_configured": "This board is already configured."
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "Waveshare Relay konfigurieren",
-        "description": "Kanal auswählen, der bearbeitet werden soll. Der Modus lässt sich jederzeit wechseln – Name und Entity-ID bleiben erhalten.",
+        "title": "Configure Waveshare Relay",
+        "description": "Select the channel to edit. The mode can be changed at any time - name and entity ID are preserved.",
         "data": {
-          "channel": "Kanal"
+          "channel": "Channel"
         }
       },
       "channel": {
-        "title": "Kanal {channel_number} konfigurieren",
-        "description": "Modus des Kanals festlegen. Im Modus „Pulse“ löst das Einschalten einen nativen Board-Impuls aus; das Board schaltet selbstständig zurück. Die Entity-ID bleibt unverändert.",
+        "title": "Configure channel {channel_number}",
+        "description": "Set the channel mode. In \"Pulse\" mode, switching on triggers a native board pulse; the board switches back off by itself. The entity ID stays unchanged.",
         "data": {
-          "channel_name": "Anzeigename",
-          "betriebsart": "Modus (Switch/Pulse)",
-          "impulsdauer_ms": "Impulsdauer (ms)"
+          "channel_name": "Display name",
+          "betriebsart": "Mode (Switch/Pulse)",
+          "impulsdauer_ms": "Pulse duration (ms)"
         }
       }
     }

@@ -1,12 +1,12 @@
 funktionstest_start:
-  name: Funktionstest starten
+  name: Start function test
   description: >
-    Startet einen One-Hot-Funktionstest: Jeder Kanal wird nacheinander ein-
-    und wieder ausgeschaltet. Ohne Geräteauswahl laufen alle Boards.
+    Starts a one-hot function test: every channel is switched on and
+    off in turn. Without a device target all boards run.
   fields:
     laufzeit_s:
-      name: Laufzeit pro Kanal (s)
-      description: Wie lange jedes Relais eingeschaltet bleibt.
+      name: Runtime per channel (s)
+      description: How long each relay stays switched on.
       required: false
       default: 5
       selector:
@@ -16,8 +16,8 @@ funktionstest_start:
           step: 0.1
           unit_of_measurement: s
     pause_s:
-      name: Pause zwischen Kanälen (s)
-      description: Wartezeit nach dem Ausschalten bevor der nächste Kanal drankommt.
+      name: Pause between channels (s)
+      description: Wait time after switch-off before the next channel.
       required: false
       default: 0.25
       selector:
@@ -27,19 +27,19 @@ funktionstest_start:
           step: 0.05
           unit_of_measurement: s
     einmalig:
-      name: Nur ein Durchlauf
+      name: Single pass
       description: >
-        Wenn aktiv, wird der Test nach einem kompletten Durchlauf beendet.
-        Sonst Endlosschleife bis manuell gestoppt.
+        If enabled, the test ends after one complete pass. Otherwise it
+        loops until stopped manually.
       required: false
       default: true
       selector:
         boolean:
     device_id:
-      name: Gerät
+      name: Device
       description: >
-        Board, auf dem der Test läuft. Leer lassen für alle Boards.
-        Während des Tests sind manuelle Schaltbefehle gesperrt.
+        Board the test runs on. Leave empty for all boards. Manual
+        switch commands are blocked while the test runs.
       required: false
       selector:
         device:
@@ -47,14 +47,14 @@ funktionstest_start:
             - integration: waveshare_relay
 
 funktionstest_stop:
-  name: Funktionstest stoppen
+  name: Stop function test
   description: >
-    Stoppt einen laufenden Funktionstest und schaltet alle Relais aus.
-    Ohne Geräteauswahl auf allen Boards.
+    Stops a running function test and switches all relays off.
+    Without a device target on all boards.
   fields:
     device_id:
-      name: Gerät
-      description: Board, dessen Test gestoppt wird. Leer lassen für alle Boards.
+      name: Device
+      description: Board whose test is stopped. Leave empty for all boards.
       required: false
       selector:
         device:
@@ -62,14 +62,14 @@ funktionstest_stop:
             - integration: waveshare_relay
 
 statistik_zuruecksetzen:
-  name: Statistik zurücksetzen
+  name: Reset statistics
   description: >
-    Setzt alle Zähler und Dauer-Werte auf 0 zurück.
-    Ohne Geräteauswahl auf allen Boards.
+    Resets all counters and duration values to 0. Without a device
+    target on all boards.
   fields:
     device_id:
-      name: Gerät
-      description: Board, dessen Statistik zurückgesetzt wird. Leer lassen für alle Boards.
+      name: Device
+      description: Board whose statistics are reset. Leave empty for all boards.
       required: false
       selector:
         device:
@@ -77,14 +77,14 @@ statistik_zuruecksetzen:
             - integration: waveshare_relay
 
 alle_aus:
-  name: Alle Relais aus
+  name: All relays off
   description: >
-    Schaltet alle Relais sofort aus. Ohne Geräteauswahl auf allen Boards.
-    Bleibt auch während eines Funktionstests verfügbar (Sicherheitsstopp).
+    Switches all relays off immediately. Without a device target on all
+    boards. Stays available during a function test (safety stop).
   fields:
     device_id:
-      name: Gerät
-      description: Board, das ausgeschaltet wird. Leer lassen für alle Boards.
+      name: Device
+      description: Board that is switched off. Leave empty for all boards.
       required: false
       selector:
         device:
