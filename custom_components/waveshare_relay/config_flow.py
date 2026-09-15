@@ -40,6 +40,7 @@ from .const import (
     PULSE_STEP_MS,
     MODE_PULSE,
     MODE_SWITCH,
+    RELAY_COUNT_MODELS,
     SUPPORTED_RELAY_COUNTS,
 )
 from .modbus_compat import read_coils_compat
@@ -59,8 +60,22 @@ STEP_USER_SCHEMA = vol.Schema(
         vol.Required(CONF_POLL_INTERVAL, default=DEFAULT_POLL_INTERVAL): vol.All(
             int, vol.Range(min=1, max=10)
         ),
-        vol.Required(CONF_RELAY_COUNT, default=DEFAULT_RELAY_COUNT): vol.All(
-            vol.Coerce(int), vol.In(SUPPORTED_RELAY_COUNTS)
+        # Dropdown instead of a free text field: one click, no invalid
+        # input possible (a text field rejecting 9 or "8CH" felt glitchy).
+        vol.Required(CONF_RELAY_COUNT, default=str(DEFAULT_RELAY_COUNT)): vol.All(
+            SelectSelector(
+                SelectSelectorConfig(
+                    options=[
+                        SelectOptionDict(
+                            value=str(count),
+                            label=f"{count} Relais – {RELAY_COUNT_MODELS[count]}",
+                        )
+                        for count in SUPPORTED_RELAY_COUNTS
+                    ]
+                )
+            ),
+            vol.Coerce(int),
+            vol.In(SUPPORTED_RELAY_COUNTS),
         ),
     }
 )
