@@ -5,12 +5,17 @@ import logging
 import time
 from typing import Any
 
-from homeassistant.components.sensor import SensorEntity, SensorStateClass
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
+    SensorEntity,
+    SensorStateClass,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN
 from .coordinator import WaveshareRelayCoordinator
@@ -60,6 +65,9 @@ async def async_setup_entry(
 
     # Function test status
     entities.append(WaveshareTestStatusSensor(coordinator, entry))
+
+    # First connection date (board aging)
+    entities.append(WaveshareFirstSeenSensor(coordinator, entry))
 
     # Per channel: on/off duration, counters
     for ch in range(coordinator.relay_count):
@@ -133,6 +141,33 @@ class WaveshareTestStatusSensor(
             "laeuft": self.coordinator.test_running,
             "aktueller_kanal": self.coordinator.test_current_channel,
         }
+
+
+class WaveshareFirstSeenSensor(
+    CoordinatorEntity[WaveshareRelayCoordinator], SensorEntity
+):
+    """Date of the first successful board contact (board aging).
+
+    Survives statistics resets and re-adding the board because it is
+    persisted with the MAC-keyed statistics snapshot.
+    """
+
+    _attr_has_entity_name = True
+    _attr_name = "Erste Verbindung"
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_icon = "mdi:calendar-clock"
+
+    def __init__(self, coordinator, entry) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{entry.entry_id}_first_seen"
+        self._attr_device_info = device_info(entry, coordinator)
+
+    @property
+    def native_value(self) -> Any:
+        if self.coordinator.first_seen:
+            return dt_util.parse_datetime(self.coordinator.first_seen)
+        return None
 
 
 class WaveshareChannelDurationSensor(WaveshareChannelEntity, SensorEntity):

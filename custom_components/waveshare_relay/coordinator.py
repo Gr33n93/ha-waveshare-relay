@@ -19,6 +19,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from .const import DOMAIN, DEFAULT_POLL_INTERVAL, DEFAULT_RELAY_COUNT, PULSE_ADDR_ON
 from .modbus_compat import read_coils_compat, write_coil_compat, write_pulse_compat
 from .models import ChannelConfig, default_channel_configs
+from .storage import SAVE_INTERVAL, WaveshareStatsStore, resolve_mac
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -93,6 +94,11 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
         self.test_current_channel = 0
         self._test_task: asyncio.Task | None = None
 
+        # Persistent statistics (keyed by board MAC once resolved)
+        self.first_seen: str | None = None
+        self._stats_store: WaveshareStatsStore | None = None
+        self._last_save = 0.0
+
     def apply_channel_configs(self, configs: list[ChannelConfig]) -> None:
         """Adopt channel profiles - also at runtime, without a reload.
 
@@ -106,6 +112,65 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
             )
         self.channel_configs = configs
         self.relay_names = [c.name for c in configs]
+
+    # ─────────────── Persistent statistics ───────────────
+
+    async def _async_touch_store(self) -> None:
+        """Restore statistics on first contact, then persist periodically.
+
+        The storage key is the board MAC, so statistics survive restarts,
+        reloads and deleting/re-adding the board.
+        """
+        now = time.monotonic()
+        if self._stats_store is None:
+            mac = resolve_mac(self.host)
+            # Colons would end up in the storage file name; strip them.
+            board_key = mac.replace(":", "") if mac else f"ip-{self.host}"
+            self._stats_store = WaveshareStatsStore(self.hass, board_key)
+            data = await self._stats_store.async_load()
+            if data:
+                self._merge_persisted(data)
+            else:
+                self.first_seen = _iso_now()
+                _LOGGER.info("First contact with board %s, statistics start", self.host)
+            self._last_save = now
+            await self._async_persist()  # snapshot immediately
+            return
+        if now - self._last_save >= SAVE_INTERVAL:
+            self._last_save = now
+            await self._async_persist()
+
+    def _merge_persisted(self, data: dict) -> None:
+        """Adopt a persisted snapshot; monotonic baselines restart fresh."""
+        self.first_seen = data.get("first_seen")
+        for key, value in (data.get("stats") or {}).items():
+            if key in self.stats:
+                self.stats[key] = value
+        self.stats["verbunden"] = True  # we just polled successfully
+        stored_channels = data.get("channel_stats") or []
+        for index, stored in enumerate(stored_channels[: self.relay_count]):
+            cs = self.channel_stats[index]
+            for key in (
+                "ein_zaehler", "aus_zaehler", "schreibfehler",
+                "einschaltdauer_s", "ausschaltdauer_s",
+                "letzter_befehl", "letzter_impuls",
+            ):
+                if key in stored:
+                    cs[key] = stored[key]
+            cs["zustand"] = False  # corrected by the poll in flight
+            cs["letzter_wechsel"] = None  # fresh monotonic baseline
+        _LOGGER.info(
+            "Statistics restored for board %s (first seen %s)",
+            self.host, self.first_seen,
+        )
+
+    async def _async_persist(self) -> None:
+        """Write the current snapshot to disk."""
+        if self._stats_store is None or self.first_seen is None:
+            return
+        await self._stats_store.async_save(
+            self.first_seen, self.stats, self.channel_stats
+        )
 
     # ─────────────── Modbus Connection ───────────────
 
@@ -132,6 +197,7 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
 
     async def async_shutdown(self) -> None:
         await self.async_stop_test()
+        await self._async_persist()
         for cancel in self._pulse_timers.values():
             cancel()
         self._pulse_timers.clear()
@@ -193,6 +259,8 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
             self.stats["letzte_abfrage_ms"] = elapsed_ms
             self.stats["letzter_erfolg_zeit"] = _iso_now()
             self.stats["verbunden"] = True
+
+            await self._async_touch_store()
 
             for i in range(self.relay_count):
                 new_state = bool(result.bits[i])
@@ -441,6 +509,9 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
             {"relay_states": self.relay_states, "stats": self.stats}
         )
         _LOGGER.info("Statistics reset")
+        # first_seen deliberately survives: it is a board fact, not a statistic.
+        with suppress(Exception):
+            self.hass.async_create_task(self._async_persist())
 
 
 def _iso_now() -> str:

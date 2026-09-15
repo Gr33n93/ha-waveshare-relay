@@ -195,7 +195,10 @@ Then restart Home Assistant.
 
 - The board typically allows only one concurrent Modbus TCP connection.
 - Other Modbus clients or test tools should not be connected in parallel.
-- Duty values are counted per session and restart after a reboot or reset.
+- Statistics are persisted per board (keyed by MAC) and survive restarts,
+  reloads and even deleting/re-adding the board. Only the reset button zeroes
+  the counters; the first connection date is kept (sensor "Erste Verbindung" -
+  shows the board aging).
 - Duration sensors advance on every relay change; the currently running
   value is available as attribute `aktuell_s`.
 - RS485/RTU boards such as the Modbus RTU Relay 4CH are not supported.
