@@ -8,3 +8,4 @@ __pycache__/
 design/
 .zcode/
 __pycache__/
+*.local.md

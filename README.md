@@ -206,6 +206,8 @@ Then restart Home Assistant.
 - RS485/RTU boards such as the Modbus RTU Relay 4CH are not supported.
 - The integration uses the Modbus library that Home Assistant provides
   through the built-in Modbus integration.
+- See [docs/HARDWARE.md](docs/HARDWARE.md) for the verified register map,
+  identification details and the board web UI.
 
 ## Support development
 
