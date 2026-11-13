@@ -78,6 +78,10 @@ created automatically.
 | `sensor` | 12 + 5 per relay | Statistics, duty times, counters and test status |
 | `button` | 4 | Function test, all off, reset statistics |
 
+The function-test sensor now reports the raw states `idle` and `running`,
+translated in the interface. Automations using the previous German state text
+must be updated; the `aktueller_kanal` attribute contains the current channel.
+
 ## Per-channel mode (Switch / Pulse)
 
 Every channel is configurable individually through the integration options

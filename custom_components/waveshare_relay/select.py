@@ -63,7 +63,7 @@ class WaveshareChannelModeSelect(WaveshareChannelEntity, SelectEntity):
             entry,
             channel,
             unique_id=f"{entry.entry_id}_relay_{channel + 1}_mode",
-            name_suffix="Mode",
+            translation_key="channel_mode",
         )
         self._entry = entry
 

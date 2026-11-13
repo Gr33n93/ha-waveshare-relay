@@ -41,6 +41,43 @@
       }
     }
   },
+  "exceptions": {
+    "device_not_found": {"message": "Gerät {device_id} nicht gefunden."},
+    "device_not_active": {"message": "Das gewählte Gerät gehört zu keiner aktiven Waveshare-Instanz."},
+    "test_running": {"message": "Funktionstest läuft. Manuelle Schaltbefehle werden abgelehnt; Alle-Aus bleibt möglich."},
+    "all_off_incomplete": {"message": "Alle-Aus unvollständig: {errors}"}
+  },
+  "entity": {
+    "binary_sensor": {"connection": {"name": "Verbindung"}},
+    "button": {
+      "test_start": {"name": "Funktionstest starten"},
+      "test_stop": {"name": "Funktionstest stoppen"},
+      "all_off": {"name": "Alle Relais aus"},
+      "reset_stats": {"name": "Statistik zurücksetzen"}
+    },
+    "select": {
+      "channel_mode": {"name": "{channel} Mode", "state": {"Switch": "Switch", "Pulse": "Pulse"}}
+    },
+    "sensor": {
+      "abfragen_gesamt": {"name": "Abfragen gesamt"},
+      "abfragen_ok": {"name": "Abfragen erfolgreich"},
+      "abfragen_fehler": {"name": "Abfragen fehlgeschlagen"},
+      "letzte_abfrage_ms": {"name": "Reaktionszeit"},
+      "schreibvorgaenge_gesamt": {"name": "Schreibvorgänge gesamt"},
+      "schreiben_ok": {"name": "Schreiben erfolgreich"},
+      "schreiben_fehler": {"name": "Schreiben fehlgeschlagen"},
+      "letzte_fehlermeldung": {"name": "Letzte Fehlermeldung"},
+      "letzter_fehler_zeit": {"name": "Letzter Fehler (Zeit)"},
+      "letzter_erfolg_zeit": {"name": "Letzter Erfolg (Zeit)"},
+      "test_status": {"name": "Funktionstest", "state": {"idle": "Inaktiv", "running": "Läuft"}},
+      "first_seen": {"name": "Erste Verbindung"},
+      "channel_ein_duration": {"name": "{channel} Einschaltdauer"},
+      "channel_aus_duration": {"name": "{channel} Ausschaltdauer"},
+      "channel_ein_count": {"name": "{channel} EIN-Zähler"},
+      "channel_aus_count": {"name": "{channel} AUS-Zähler"},
+      "channel_fehler_count": {"name": "{channel} Schreibfehler"}
+    }
+  },
   "services": {
     "funktionstest_start": {
       "name": "Funktionstest starten",

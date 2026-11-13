@@ -86,10 +86,10 @@ class _BoardSensor(CoordinatorEntity[WaveshareRelayCoordinator], SensorEntity):
     _attr_has_entity_name = True
     _attr_entity_category = EntityCategory.DIAGNOSTIC
 
-    def __init__(self, coordinator, entry, key: str, name: str) -> None:
+    def __init__(self, coordinator, entry, key: str, translation_key: str) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry.entry_id}_{key}"
-        self._attr_name = name
+        self._attr_translation_key = translation_key
         self._attr_device_info = device_info(entry, coordinator)
 
 
@@ -97,7 +97,7 @@ class WaveshareGlobalSensor(_BoardSensor):
     """Board-wide statistics sensor."""
 
     def __init__(self, coordinator, entry, sdef: dict) -> None:
-        super().__init__(coordinator, entry, f"stat_{sdef['key']}", sdef["name"])
+        super().__init__(coordinator, entry, f"stat_{sdef['key']}", sdef["key"])
         self._key = sdef["key"]
         self._last_write = 0.0
         self._attr_icon = sdef["icon"]
@@ -122,16 +122,15 @@ class WaveshareTestStatusSensor(_BoardSensor):
     """Function test status sensor."""
 
     _attr_icon = "mdi:test-tube"
+    _attr_device_class = SensorDeviceClass.ENUM
+    _attr_options = ["idle", "running"]
 
     def __init__(self, coordinator, entry) -> None:
-        super().__init__(coordinator, entry, "test_status", "Funktionstest")
+        super().__init__(coordinator, entry, "test_status", "test_status")
 
     @property
     def native_value(self) -> str:
-        if self.coordinator.test_running:
-            ch = self.coordinator.test_current_channel
-            return f"Läuft – Kanal {ch}"
-        return "Inaktiv"
+        return "running" if self.coordinator.test_running else "idle"
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
@@ -152,7 +151,7 @@ class WaveshareFirstSeenSensor(_BoardSensor):
     _attr_icon = "mdi:calendar-clock"
 
     def __init__(self, coordinator, entry) -> None:
-        super().__init__(coordinator, entry, "first_seen", "Erste Verbindung")
+        super().__init__(coordinator, entry, "first_seen", "first_seen")
 
     @property
     def native_value(self) -> Any:
@@ -174,7 +173,7 @@ class WaveshareChannelDurationSensor(WaveshareChannelEntity, SensorEntity):
             entry,
             channel,
             unique_id=f"{entry.entry_id}_ch{channel + 1}_{kind}_dauer",
-            name_suffix="Einschaltdauer" if kind == "ein" else "Ausschaltdauer",
+            translation_key=f"channel_{kind}_duration",
         )
         self._kind = kind  # "ein" or "aus"
         self._last_write = 0.0
@@ -232,13 +231,13 @@ class WaveshareChannelCounterSensor(WaveshareChannelEntity, SensorEntity):
     }
 
     def __init__(self, coordinator, entry, channel: int, kind: str) -> None:
-        label, icon, stat_key = self._KINDS[kind]
+        _label, icon, stat_key = self._KINDS[kind]
         super().__init__(
             coordinator,
             entry,
             channel,
             unique_id=f"{entry.entry_id}_ch{channel + 1}_{kind}_cnt",
-            name_suffix=label,
+            translation_key=f"channel_{kind}_count",
         )
         self._stat_key = stat_key
         self._attr_icon = icon

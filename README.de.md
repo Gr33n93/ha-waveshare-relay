@@ -78,6 +78,11 @@ Entities automatisch angelegt.
 | `sensor` | 12 + 5 pro Relais | Statistik, Laufzeiten, Zähler und Teststatus |
 | `button` | 4 | Funktionstest, Alle aus, Statistik zurücksetzen |
 
+Der Funktionstest-Sensor liefert jetzt die Rohzustände `idle` und `running`,
+die in der Oberfläche übersetzt werden. Automationen mit den bisherigen deutschen
+Zustandstexten müssen angepasst werden; das Attribut `aktueller_kanal` enthält
+den aktuellen Kanal.
+
 ## Modus pro Kanal (Switch / Pulse)
 
 Jeder Kanal ist über die Integrationsoptionen (**Geräte & Dienste → Waveshare

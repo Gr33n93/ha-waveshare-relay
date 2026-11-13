@@ -32,7 +32,7 @@ class WaveshareConnectionSensor(
     """Connection status of the relay board."""
 
     _attr_has_entity_name = True
-    _attr_name = "Verbindung"
+    _attr_translation_key = "connection"
     _attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
     _attr_icon = "mdi:lan-connect"
     _attr_entity_category = EntityCategory.DIAGNOSTIC
