@@ -68,7 +68,7 @@ STEP_USER_SCHEMA = vol.Schema(
                     options=[
                         SelectOptionDict(
                             value=str(count),
-                            label=f"{count} Relais – {RELAY_COUNT_MODELS[count]}",
+                            label=f"{count} - {RELAY_COUNT_MODELS[count]}",
                         )
                         for count in SUPPORTED_RELAY_COUNTS
                     ]
@@ -176,7 +176,7 @@ class WaveshareRelayOptionsFlowHandler(config_entries.OptionsFlow):
             choices.append(
                 SelectOptionDict(
                     value=str(cfg.channel),
-                    label=f"Kanal {cfg.channel + 1} – {cfg.name} ({art})",
+                    label=f"{cfg.channel + 1} - {cfg.name} ({art})",
                 )
             )
         return self.async_show_form(

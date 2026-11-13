@@ -49,7 +49,7 @@ class _WaveshareButton(CoordinatorEntity[WaveshareRelayCoordinator], ButtonEntit
 class WaveshareTestStartButton(_WaveshareButton):
     """Start the function test."""
 
-    _attr_name = "Funktionstest starten"
+    _attr_translation_key = "test_start"
     _attr_icon = "mdi:play-circle"
 
     def __init__(self, coordinator, entry) -> None:
@@ -64,7 +64,7 @@ class WaveshareTestStartButton(_WaveshareButton):
 class WaveshareTestStopButton(_WaveshareButton):
     """Stop the function test."""
 
-    _attr_name = "Funktionstest stoppen"
+    _attr_translation_key = "test_stop"
     _attr_icon = "mdi:stop-circle"
 
     def __init__(self, coordinator, entry) -> None:
@@ -77,7 +77,7 @@ class WaveshareTestStopButton(_WaveshareButton):
 class WaveshareAllOffButton(_WaveshareButton):
     """Switch all relays off."""
 
-    _attr_name = "Alle Relais aus"
+    _attr_translation_key = "all_off"
     _attr_icon = "mdi:power-off"
 
     def __init__(self, coordinator, entry) -> None:
@@ -90,7 +90,7 @@ class WaveshareAllOffButton(_WaveshareButton):
 class WaveshareResetStatsButton(_WaveshareButton):
     """Reset statistics."""
 
-    _attr_name = "Statistik zurücksetzen"
+    _attr_translation_key = "reset_stats"
     _attr_icon = "mdi:restart"
     _attr_entity_category = EntityCategory.DIAGNOSTIC
 

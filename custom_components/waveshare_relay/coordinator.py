@@ -299,8 +299,7 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
         """
         if self.test_running and source not in ("Funktionstest", "alle_aus"):
             raise HomeAssistantError(
-                "Funktionstest läuft – manuelle Schaltbefehle werden solange "
-                "abgelehnt (Alle-Aus bleibt möglich)."
+                translation_domain=DOMAIN, translation_key="test_running"
             )
 
     async def _async_write(
@@ -408,7 +407,9 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
                 errors.append(f"Kanal {ch + 1}: {err}")
         if errors:
             raise HomeAssistantError(
-                "Alle-Aus unvollständig: " + "; ".join(errors)
+                translation_domain=DOMAIN,
+                translation_key="all_off_incomplete",
+                translation_placeholders={"errors": "; ".join(errors)},
             )
 
     # ─────────────── Function test ───────────────

@@ -21,6 +21,70 @@
       "already_configured": "This board is already configured."
     }
   },
+  "exceptions": {
+    "device_not_found": {"message": "Device {device_id} not found."},
+    "device_not_active": {"message": "The selected device does not belong to an active Waveshare integration."},
+    "test_running": {"message": "A function test is running. Manual switching is blocked; all off remains available."},
+    "all_off_incomplete": {"message": "Could not switch all relays off: {errors}"}
+  },
+  "entity": {
+    "binary_sensor": {"connection": {"name": "Connection"}},
+    "button": {
+      "test_start": {"name": "Start function test"},
+      "test_stop": {"name": "Stop function test"},
+      "all_off": {"name": "All relays off"},
+      "reset_stats": {"name": "Reset statistics"}
+    },
+    "select": {
+      "channel_mode": {"name": "{channel} mode", "state": {"Switch": "Switch", "Pulse": "Pulse"}}
+    },
+    "sensor": {
+      "abfragen_gesamt": {"name": "Total polls"},
+      "abfragen_ok": {"name": "Successful polls"},
+      "abfragen_fehler": {"name": "Failed polls"},
+      "letzte_abfrage_ms": {"name": "Response time"},
+      "schreibvorgaenge_gesamt": {"name": "Total writes"},
+      "schreiben_ok": {"name": "Successful writes"},
+      "schreiben_fehler": {"name": "Failed writes"},
+      "letzte_fehlermeldung": {"name": "Last error message"},
+      "letzter_fehler_zeit": {"name": "Last error time"},
+      "letzter_erfolg_zeit": {"name": "Last success time"},
+      "test_status": {"name": "Function test", "state": {"idle": "Inactive", "running": "Running"}},
+      "first_seen": {"name": "First connection"},
+      "channel_ein_duration": {"name": "{channel} on duration"},
+      "channel_aus_duration": {"name": "{channel} off duration"},
+      "channel_ein_count": {"name": "{channel} on count"},
+      "channel_aus_count": {"name": "{channel} off count"},
+      "channel_fehler_count": {"name": "{channel} write errors"}
+    }
+  },
+  "services": {
+    "funktionstest_start": {
+      "name": "Start function test",
+      "description": "Starts a one-hot function test: each channel is switched on and off in turn. Without a device selection, all boards are tested.",
+      "fields": {
+        "laufzeit_s": {"name": "Runtime per channel (s)", "description": "How long each relay stays switched on."},
+        "pause_s": {"name": "Pause between channels (s)", "description": "Wait time after switching off before the next channel."},
+        "einmalig": {"name": "Single pass", "description": "Stop after one complete pass, or continue until manually stopped."},
+        "device_id": {"name": "Device", "description": "Board to test. Leave empty for all boards. Manual switching is blocked during the test."}
+      }
+    },
+    "funktionstest_stop": {
+      "name": "Stop function test",
+      "description": "Stops a running function test and switches all relays off. Without a device selection, applies to all boards.",
+      "fields": {"device_id": {"name": "Device", "description": "Board whose test is stopped. Leave empty for all boards."}}
+    },
+    "statistik_zuruecksetzen": {
+      "name": "Reset statistics",
+      "description": "Resets all counters and duration values to zero. Without a device selection, applies to all boards.",
+      "fields": {"device_id": {"name": "Device", "description": "Board whose statistics are reset. Leave empty for all boards."}}
+    },
+    "alle_aus": {
+      "name": "All relays off",
+      "description": "Switches all relays off immediately. Without a device selection, applies to all boards. Available during a function test as a safety stop.",
+      "fields": {"device_id": {"name": "Device", "description": "Board to switch off. Leave empty for all boards."}}
+    }
+  },
   "options": {
     "step": {
       "init": {

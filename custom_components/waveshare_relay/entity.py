@@ -41,11 +41,11 @@ class WaveshareChannelEntity(
         channel: int,
         *,
         unique_id: str,
-        name_suffix: str = "",
+        translation_key: str | None = None,
     ) -> None:
         super().__init__(coordinator)
         self._channel = channel
-        self._name_suffix = name_suffix
+        self._attr_translation_key = translation_key
         self._attr_unique_id = unique_id
         self._attr_device_info = device_info(entry, coordinator)
 
@@ -53,4 +53,11 @@ class WaveshareChannelEntity(
     def name(self) -> str | None:
         """Friendly name: channel name plus optional suffix."""
         base = self.coordinator.relay_names[self._channel]
-        return f"{base} {self._name_suffix}" if self._name_suffix else base
+        if not self.translation_key or not self.platform_data:
+            return base
+        key = (
+            f"component.{DOMAIN}.entity.{self.platform_data.domain}."
+            f"{self.translation_key}.name"
+        )
+        template = self.platform_data.platform_translations.get(key, "{channel}")
+        return template.format(channel=base)

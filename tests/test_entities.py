@@ -1,5 +1,7 @@
 """Tests for the entity platforms: identity, naming, throttling, persistence."""
 from unittest.mock import AsyncMock, MagicMock, patch
+import json
+from pathlib import Path
 
 import custom_components.waveshare_relay as pkg
 from custom_components.waveshare_relay import entity as ent
@@ -28,6 +30,15 @@ def test_channel_entity_identity_and_dynamic_names():
         duration = sensor_mod.WaveshareChannelDurationSensor(coordinator, entry, 1, "aus")
         counter = sensor_mod.WaveshareChannelCounterSensor(coordinator, entry, 0, "fehler")
 
+    translations = json.loads(
+        (Path(__file__).parents[1] / "custom_components/waveshare_relay/translations/de.json").read_text()
+    )
+    for entity, domain in ((mode, "select"), (duration, "sensor"), (counter, "sensor")):
+        entity.platform_data = MagicMock(domain=domain, platform_translations={
+            f"component.waveshare_relay.entity.{domain}.{entity.translation_key}.name":
+                translations["entity"][domain][entity.translation_key]["name"]
+        })
+
     assert (switch.name, switch.unique_id) == ("Garage", "e1_relay_1")
     assert (mode.name, mode.unique_id) == ("Garage Mode", "e1_relay_1_mode")
     assert (duration.name, duration.unique_id) == ("Relais 2 Ausschaltdauer", "e1_ch2_aus_dauer")
@@ -36,6 +47,54 @@ def test_channel_entity_identity_and_dynamic_names():
     # Renaming a channel reaches the entities without rebuilding them.
     coordinator.relay_names[0] = "Werkbank"
     assert switch.name == "Werkbank"
+    assert mode.name == "Werkbank Mode"
+
+
+def test_translation_coverage_and_english_channel_names():
+    translation_dir = Path(__file__).parents[1] / "custom_components/waveshare_relay/translations"
+    english = json.loads((translation_dir / "en.json").read_text())
+    german = json.loads((translation_dir / "de.json").read_text())
+
+    def paths(value, prefix=()):
+        if isinstance(value, dict):
+            return {path for key, child in value.items() for path in paths(child, (*prefix, key))}
+        return {prefix}
+
+    assert paths(english) == paths(german)
+    source = json.loads((translation_dir.parent / "strings.json").read_text())
+    assert paths(english) == paths(source)
+    assert english["entity"]["sensor"]["channel_aus_duration"]["name"].format(channel="Garage") == "Garage off duration"
+
+    coordinator = make_coordinator_mock(("Garage",))
+    with patch.object(ent.CoordinatorEntity, "__init__", patch_ce):
+        duration = sensor_mod.WaveshareChannelDurationSensor(coordinator, MagicMock(entry_id="e1"), 0, "aus")
+    duration.platform_data = MagicMock(domain="sensor", platform_translations={
+        "component.waveshare_relay.entity.sensor.channel_aus_duration.name":
+            english["entity"]["sensor"]["channel_aus_duration"]["name"]
+    })
+    assert duration.name == "Garage off duration"
+    coordinator.relay_names[0] = "Workshop"
+    assert duration.name == "Workshop off duration"
+
+
+def test_function_test_state_uses_stable_translation_values():
+    coordinator = make_coordinator_mock()
+    with patch.object(sensor_mod.CoordinatorEntity, "__init__", patch_ce):
+        sensor = sensor_mod.WaveshareTestStatusSensor(coordinator, MagicMock(entry_id="e1"))
+    coordinator.test_running = False
+    assert sensor.native_value == "idle"
+    coordinator.test_running = True
+    coordinator.test_current_channel = 2
+    assert sensor.native_value == "running"
+    assert sensor.extra_state_attributes["aktueller_kanal"] == 2
+
+
+def test_localized_default_channel_names_preserve_custom_names():
+    from custom_components.waveshare_relay.models import channel_configs_from_entry
+
+    options = {CONF_CHANNEL_CONFIGS: {"0": {"name": "Werkbank"}}}
+    assert [cfg.name for cfg in channel_configs_from_entry(options, 2, "en-GB")] == ["Werkbank", "Relay 2"]
+    assert [cfg.name for cfg in channel_configs_from_entry(options, 2, "de")] == ["Werkbank", "Relais 2"]
 
 
 async def test_switch_turn_on_branches_by_mode():
