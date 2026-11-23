@@ -150,8 +150,8 @@ Wähle dein Gerät und suche den Verbindungs-Binary-Sensor im Bereich
 **Diagnose**. Öffne den Sensor, um seine Entity-ID zu sehen. Namen und IDs
 unterscheiden sich je nach Installationssprache und Gerätename.
 
-Aktive Benachrichtigungen richtest du selbst ein. Dieses Beispiel benachrichtigt
-dich, wenn das Board länger als eine Minute nicht erreichbar war:
+Eine aktive Benachrichtigung richtest du dir selbst per Automation ein.
+Beispiel (Benachrichtigung, wenn das Board länger als eine Minute weg ist):
 
 ```yaml
 automation:
