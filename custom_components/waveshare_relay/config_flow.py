@@ -114,12 +114,12 @@ class WaveshareRelayConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     client = AsyncModbusTcpClient(host=host, port=port, timeout=3)
                     connected = await client.connect()
                     if not connected:
-                        raise ConnectionError("Keine Verbindung")
+                        raise ConnectionError(f"Connection to {host}:{port} failed")
                     result = await read_coils_compat(
                         client, address=0, count=relay_count, unit_id=unit_id
                     )
                     if result.isError():
-                        raise ConnectionError(f"Modbus-Fehler: {result}")
+                        raise ConnectionError(f"Modbus error: {result}")
                 except Exception as err:
                     _LOGGER.error("Connection test failed: %s", err)
                     errors["base"] = "cannot_connect"

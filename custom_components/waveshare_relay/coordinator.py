@@ -291,6 +291,15 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
             if self._client:
                 self._client.close()
                 self._client = None
+            if isinstance(err, ConnectionError):
+                raise UpdateFailed(
+                    translation_domain=DOMAIN,
+                    translation_key="connection_failed",
+                    translation_placeholders={
+                        "host": self.host,
+                        "port": str(self.port),
+                    },
+                ) from err
             raise UpdateFailed(
                 translation_domain=DOMAIN,
                 translation_key="poll_failed",
@@ -377,6 +386,15 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
                 "%s channel %d failed: %s",
                 "Pulse" if pulse else "Write", channel + 1, err,
             )
+            if isinstance(err, ConnectionError):
+                raise HomeAssistantError(
+                    translation_domain=DOMAIN,
+                    translation_key="connection_failed",
+                    translation_placeholders={
+                        "host": self.host,
+                        "port": str(self.port),
+                    },
+                ) from err
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="write_failed",

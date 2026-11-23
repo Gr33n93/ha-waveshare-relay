@@ -42,6 +42,7 @@
     }
   },
   "exceptions": {
+    "connection_failed": {"message": "Keine Verbindung zum Relais-Board unter {host}:{port}. Verbindung und Protokolle auf Details prüfen."},
     "device_not_found": {"message": "Gerät {device_id} nicht gefunden."},
     "device_not_active": {"message": "Das gewählte Gerät gehört zu keiner aktiven Waveshare-Instanz."},
     "test_running": {"message": "Funktionstest läuft. Manuelle Schaltbefehle werden abgelehnt; Alle-Aus bleibt möglich."},

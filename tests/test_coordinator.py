@@ -139,18 +139,43 @@ async def test_first_poll_connection_failure_is_translated_and_records_details(
             await coord._async_update_data()
 
     assert exc_info.value.translation_domain == coord_mod.DOMAIN
-    assert exc_info.value.translation_key == "poll_failed"
-    for language in ("en", "de"):
+    assert exc_info.value.translation_key == "connection_failed"
+    assert exc_info.value.translation_placeholders == {
+        "host": "board",
+        "port": "502",
+    }
+    for language, label in (
+        ("en", "board:502"),
+        ("de", "board:502"),
+    ):
         path = Path(__file__).parents[1] / (
             f"custom_components/waveshare_relay/translations/{language}.json"
         )
-        assert json.loads(path.read_text())["exceptions"]["poll_failed"]["message"]
+        message = json.loads(path.read_text())["exceptions"][
+            exc_info.value.translation_key
+        ]["message"]
+        assert label in message.format(**exc_info.value.translation_placeholders)
     assert coord.stats["verbunden"] is False
     assert coord.stats["abfragen_fehler"] == 1
     assert coord.stats["letzte_fehlermeldung"] == (
         "Modbus connection failed: Connection to board:502 failed"
     )
     client.close.assert_called_once()
+
+
+async def test_write_connection_failure_is_translated(coord_factory):
+    coord, _, _, _ = coord_factory()
+    coord._ensure_connected = AsyncMock(
+        side_effect=ConnectionError("connection refused")
+    )
+
+    with pytest.raises(HomeAssistantError) as exc_info:
+        await coord.async_write_coil(0, True)
+
+    error = exc_info.value
+    assert error.translation_key == "connection_failed"
+    assert error.translation_placeholders == {"host": "board", "port": "502"}
+    assert "connection refused" not in str(error)
 
 
 async def test_setup_retry_has_translated_reason_and_preserves_cause():

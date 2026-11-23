@@ -22,6 +22,7 @@
     }
   },
   "exceptions": {
+    "connection_failed": {"message": "Could not connect to the relay board at {host}:{port}. Check the connection and logs for details."},
     "device_not_found": {"message": "Device {device_id} not found."},
     "device_not_active": {"message": "The selected device does not belong to an active Waveshare integration."},
     "test_running": {"message": "A function test is running. Manual switching is blocked; all off remains available."},
