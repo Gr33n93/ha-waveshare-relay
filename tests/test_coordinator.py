@@ -88,11 +88,20 @@ async def test_function_test_race_and_stuck_flag(coord_factory):
     assert coord.test_running is False  # reset even if the task never ran
 
 
-async def test_modbus_error_counted_and_raised(coord_factory):
+async def test_modbus_error_counted_and_translated(coord_factory):
     coord, _, _, _ = coord_factory()
     coord_mod.write_coil_compat = AsyncMock(return_value=FakeResult(err=True))
-    with pytest.raises(coord_mod.ModbusException):
+    with pytest.raises(HomeAssistantError) as exc_info:
         await coord.async_write_coil(3, True)
+    assert exc_info.value.translation_domain == coord_mod.DOMAIN
+    assert exc_info.value.translation_key == "write_failed"
+    assert exc_info.value.translation_placeholders == {"channel": "4"}
+    for language in ("en", "de"):
+        path = Path(__file__).parents[1] / (
+            f"custom_components/waveshare_relay/translations/{language}.json"
+        )
+        message = json.loads(path.read_text())["exceptions"]["write_failed"]["message"]
+        assert "4" in message.format(**exc_info.value.translation_placeholders)
     assert coord.stats["schreiben_fehler"] == 1
     assert coord.channel_stats[3]["schreibfehler"] == 1
 
@@ -118,15 +127,24 @@ async def test_all_off_reports_failed_channels_and_logs_details(coord_factory, c
         assert label in message.format(**error.translation_placeholders)
 
 
-async def test_first_poll_connection_failure_records_english_details(coord_factory):
+async def test_first_poll_connection_failure_is_translated_and_records_details(
+    coord_factory,
+):
     coord, _, _, _ = coord_factory()
     client = MagicMock()
     client.connected = False
     client.connect = AsyncMock(return_value=False)
     with patch.object(coord_mod, "AsyncModbusTcpClient", return_value=client):
-        with pytest.raises(coord_mod.UpdateFailed, match="Polling failed: Modbus connection failed: Connection to board:502 failed"):
+        with pytest.raises(coord_mod.UpdateFailed) as exc_info:
             await coord._async_update_data()
 
+    assert exc_info.value.translation_domain == coord_mod.DOMAIN
+    assert exc_info.value.translation_key == "poll_failed"
+    for language in ("en", "de"):
+        path = Path(__file__).parents[1] / (
+            f"custom_components/waveshare_relay/translations/{language}.json"
+        )
+        assert json.loads(path.read_text())["exceptions"]["poll_failed"]["message"]
     assert coord.stats["verbunden"] is False
     assert coord.stats["abfragen_fehler"] == 1
     assert coord.stats["letzte_fehlermeldung"] == (

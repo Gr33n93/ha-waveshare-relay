@@ -138,14 +138,20 @@ Sicherheitsstopp jederzeit verfügbar.
 ## Verbindungsüberwachung
 
 Fällt das Board aus (Strom- oder Netzwerkverlust), gehen alle Entities des
-Geräts auf **Nicht verfügbar** und der Binary-Sensor **„Verbindung"**
-(`binary_sensor.*_verbindung`) auf **Aus**. Sobald das Board wieder erreichbar
-ist, verbindet sich die Integration automatisch neu – ohne Neustart. Der
-letzte Fehler steht in den Diagnose-Sensoren „Letzte Fehlermeldung" und
-„Letzter Fehler (Zeit)".
+Geräts auf **Nicht verfügbar** und der Binary-Sensor **Verbindung** auf **Aus**.
+Sobald das Board wieder erreichbar ist, verbindet sich die Integration
+automatisch neu – ohne Neustart. Der letzte Fehler wird in den Diagnose-Sensoren
+**Letzte Fehlermeldung** und **Letzter Fehler (Zeit)** gespeichert. Diese sind
+nach der Wiederverbindung wieder verfügbar.
 
-Eine aktive Benachrichtigung richtest du dir selbst per Automation ein.
-Beispiel (Benachrichtigung, wenn das Board länger als eine Minute weg ist):
+Den Verbindungssensor und seine Entity-ID findest du unter
+**Einstellungen → Geräte & Dienste → Waveshare Modbus PoE Ethernet Relay**.
+Wähle dein Gerät und suche den Verbindungs-Binary-Sensor im Bereich
+**Diagnose**. Öffne den Sensor, um seine Entity-ID zu sehen. Namen und IDs
+unterscheiden sich je nach Installationssprache und Gerätename.
+
+Aktive Benachrichtigungen richtest du selbst ein. Dieses Beispiel benachrichtigt
+dich, wenn das Board länger als eine Minute nicht erreichbar war:
 
 ```yaml
 automation:
@@ -153,7 +159,7 @@ automation:
     mode: single
     trigger:
       - platform: state
-        entity_id: binary_sensor.waveshare_relay_verbindung
+        entity_id: binary_sensor.ersetzen_durch_Ihren_Verbindungsensor
         to: "off"
         for: "00:01:00"
     action:

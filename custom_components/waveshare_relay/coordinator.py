@@ -259,7 +259,11 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
                     client, address=0, count=self.relay_count, unit_id=self.unit_id
                 )
             if result.isError():
-                raise UpdateFailed(f"FC01 error: {result}")
+                raise UpdateFailed(
+                    translation_domain=DOMAIN,
+                    translation_key="fc01_error",
+                    translation_placeholders={"error": str(result)}
+                )
 
             now_mono = time.monotonic()
             elapsed_ms = round((now_mono - t0) * 1000, 1)
@@ -287,7 +291,11 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
             if self._client:
                 self._client.close()
                 self._client = None
-            raise UpdateFailed(f"Polling failed: {err}") from err
+            raise UpdateFailed(
+                translation_domain=DOMAIN,
+                translation_key="poll_failed",
+                translation_placeholders={"error": str(err)}
+            ) from err
 
     # ─────────────── Modbus write (FC05) ───────────────
 
@@ -369,7 +377,11 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
                 "%s channel %d failed: %s",
                 "Pulse" if pulse else "Write", channel + 1, err,
             )
-            raise
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="write_failed",
+                translation_placeholders={"channel": str(channel + 1)},
+            ) from err
 
     async def async_write_coil(
         self, channel: int, value: bool, source: str = "manuell"

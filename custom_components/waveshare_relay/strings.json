@@ -26,7 +26,10 @@
     "device_not_active": {"message": "The selected device does not belong to an active Waveshare integration."},
     "test_running": {"message": "A function test is running. Manual switching is blocked; all off remains available."},
     "all_off_incomplete": {"message": "Could not switch all relays off. Failed channels: {channels}. Check the logs for details."},
-    "setup_poll_failed": {"message": "Could not poll the relay board at {host}:{port}. Check the connection and logs for details."}
+    "setup_poll_failed": {"message": "Could not poll the relay board at {host}:{port}. Check the connection and logs for details."},
+    "poll_failed": {"message": "Polling failed. Could not read relay states. Check the connection and logs for details. Error: {error}"},
+    "fc01_error": {"message": "FC01 error: {error}"},
+    "write_failed": {"message": "Could not control relay channel {channel}. Check the connection and logs for details."}
   },
   "entity": {
     "binary_sensor": {"connection": {"name": "Connection"}},
