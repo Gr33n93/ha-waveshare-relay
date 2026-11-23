@@ -2,7 +2,7 @@
 
 [🇩🇪 Deutsch](README.de.md) | [🇬🇧 English](README.md)
 
-[![HACS Default](https://img.shields.io/badge/HACS-Default-41BDF5?style=for-the-badge)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Gr33n93&repository=ha-waveshare-relay&category=integration)
+[![Im Home Assistant Marketplace öffnen](https://img.shields.io/badge/Home%20Assistant-Marketplace-41BDF5?style=for-the-badge)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Gr33n93&repository=ha-waveshare-relay&category=integration)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Custom%20Integration-18BCF2?style=for-the-badge)
 ![Release](https://img.shields.io/github/v/release/Gr33n93/ha-waveshare-relay?style=for-the-badge)
 
@@ -28,32 +28,29 @@ Kommunikation läuft lokal per Modbus TCP.
 | Kanäle | EIN-/AUS-Zähler und sessionbasierte Laufzeiten |
 | Wartung | Funktionstest, Statistik-Reset und "Alle Relais aus" |
 
-## Installation über HACS
+## Installation über den Marketplace
 
-Diese Integration ist im [HACS-Standardverzeichnis](https://github.com/hacs/default/blob/master/integration)
-enthalten und direkt über die HACS-Suche verfügbar.
+Ab Home Assistant **2026.11** ist der Marketplace bereits enthalten. Eine separate
+HACS-Installation ist nicht nötig.
 
-Voraussetzung: HACS ist in Home Assistant installiert und eingerichtet.
+1. Öffne als Administrator **Einstellungen → Marketplace**. Bestätige vor der
+   ersten Installation den Risikohinweis für Community-Projekte.
+2. Suche nach **Waveshare Modbus PoE Ethernet Relay** und öffne den Eintrag.
+   Alternativ: [direkt zum Eintrag](https://my.home-assistant.io/redirect/hacs_repository/?owner=Gr33n93&repository=ha-waveshare-relay&category=integration).
+3. Wähle **Installieren** und bestätige die angezeigte Version.
+4. Fahre mit der [Einrichtung](#einrichtung) fort. Starte Home Assistant nur
+   neu, wenn der Marketplace dazu auffordert.
 
-Mit diesem Button öffnest du die Integration direkt in HACS:
-
-[![Integration in HACS öffnen](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Gr33n93&repository=ha-waveshare-relay&category=integration)
-
-Oder öffne HACS über die Seitenleiste in Home Assistant:
-
-1. Nach **Waveshare Modbus PoE Ethernet Relay** suchen.
-2. Den passenden Eintrag öffnen.
-3. **Herunterladen / Download** auswählen und den Download bestätigen.
-4. Home Assistant neu starten.
-5. Die Integration wie unter [Einrichtung](#einrichtung) beschrieben hinzufügen.
+**Home Assistant 2026.10 und älter:** Richte zuerst [HACS](https://www.hacs.xyz/docs/use/)
+ein, falls noch nicht geschehen. Öffne **HACS** in der Seitenleiste, suche nach
+**Waveshare Modbus PoE Ethernet Relay** und lade die Integration herunter. Starte
+Home Assistant anschließend neu und füge die Integration wie unten beschrieben hinzu.
 
 ## Einrichtung
 
-Nach dem Neustart in Home Assistant:
-
-```text
-Einstellungen -> Geräte & Dienste -> Integration hinzufügen -> Waveshare
-```
+Gib im Einrichtungsdialog die Verbindungsdaten des Boards ein. Falls der Dialog
+nicht automatisch erscheint, öffne **Einstellungen → Geräte & Dienste →
+Integration hinzufügen** und suche nach **Waveshare Modbus PoE Ethernet Relay**.
 
 Benötigte Daten:
 
