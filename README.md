@@ -136,14 +136,14 @@ available at all times as a safety stop.
 ## Connection monitoring
 
 When the board disappears (power or network loss), all entities of the
-device go **unavailable** and the **connection** binary sensor
-(`binary_sensor.*_verbindung`) turns **off**. As soon as the board is
-reachable again the integration reconnects automatically - no restart
-required. The last error is available in the diagnostic sensors "Letzte
-Fehlermeldung" and "Letzter Fehler (Zeit)".
+device become **unavailable** and the **Connection** binary sensor turns **off**.
+As soon as the board is reachable again the integration reconnects automatically - no restart required. The last error is recorded in the
+diagnostic sensors **Last error message** and **Last error time**, which become available again after reconnecting.
 
-Active notifications are up to you - a ready-to-use example (notify when
-the board has been gone for more than a minute):
+To find your connection sensor and its entity ID, open **Settings → Devices & services → Waveshare Modbus PoE Ethernet Relay**, select your device, then look for its connection binary sensor in the **Diagnostic** section. Open the sensor to see its entity ID. Names and IDs vary with the installation language and device name.
+
+Active notifications are up to you - this example notifies you when
+the board has been gone for more than a minute:
 
 ```yaml
 automation:
@@ -151,7 +151,7 @@ automation:
     mode: single
     trigger:
       - platform: state
-        entity_id: binary_sensor.waveshare_relay_verbindung
+        entity_id: binary_sensor.replace_with_your_connection_sensor
         to: "off"
         for: "00:01:00"
     action:
@@ -162,9 +162,8 @@ automation:
 ```
 
 For phone notifications replace `notify.persistent_notification` with
-`notify.mobile_app_<device>`. The actual entity ID may differ depending
-on your device name - search for `verbindung` under **Developer Tools ->
-States**.
+`notify.mobile_app_<device>`. Replace the example entity ID with the one
+from your device page.
 
 Note: pulse channels (mode "Pulse") are never re-triggered automatically
 on reconnection; regular channels show the actual board state after

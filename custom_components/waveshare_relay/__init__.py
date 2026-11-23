@@ -8,7 +8,7 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PORT, Platform
 from homeassistant.core import HomeAssistant, ServiceCall
-from homeassistant.exceptions import HomeAssistantError
+from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
 from homeassistant.helpers import device_registry as dr
 
 from .const import (
@@ -76,7 +76,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         channel_configs=channel_configs_from_entry(entry.options, relay_count, hass.config.language),
     )
 
-    await coordinator.async_config_entry_first_refresh()
+    try:
+        await coordinator.async_config_entry_first_refresh()
+    except ConfigEntryNotReady as err:
+        raise ConfigEntryNotReady(
+            str(err),
+            translation_domain=DOMAIN,
+            translation_key="setup_poll_failed",
+            translation_placeholders={
+                "host": coordinator.host,
+                "port": str(coordinator.port),
+            },
+        ) from err
 
     hass.data[DOMAIN][entry.entry_id] = coordinator
 

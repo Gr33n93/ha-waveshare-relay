@@ -1,8 +1,10 @@
 """Tests for the coordinator: write paths, guards, statistics, config adoption."""
+import json
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from homeassistant.exceptions import HomeAssistantError
+from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
 
 import custom_components.waveshare_relay as pkg
 from custom_components.waveshare_relay import coordinator as coord_mod
@@ -93,6 +95,74 @@ async def test_modbus_error_counted_and_raised(coord_factory):
         await coord.async_write_coil(3, True)
     assert coord.stats["schreiben_fehler"] == 1
     assert coord.channel_stats[3]["schreibfehler"] == 1
+
+
+async def test_all_off_reports_failed_channels_and_logs_details(coord_factory, caplog):
+    coord, write, _, _ = coord_factory()
+    write.side_effect = [
+        FakeResult(), FakeResult(err=True), FakeResult(err=True), FakeResult()
+    ]
+
+    with pytest.raises(HomeAssistantError) as exc_info:
+        await coord.async_all_off()
+
+    error = exc_info.value
+    assert write.await_count == 4
+    assert error.translation_key == "all_off_incomplete"
+    assert error.translation_placeholders == {"channels": "2, 3"}
+    assert "channel 2 error" in caplog.text
+    assert "channel 3 error" in caplog.text
+    for language, label in (("en", "Failed channels: 2, 3"), ("de", "Fehlgeschlagene Kanäle: 2, 3")):
+        path = Path(__file__).parents[1] / f"custom_components/waveshare_relay/translations/{language}.json"
+        message = json.loads(path.read_text())["exceptions"][error.translation_key]["message"]
+        assert label in message.format(**error.translation_placeholders)
+
+
+async def test_first_poll_connection_failure_records_english_details(coord_factory):
+    coord, _, _, _ = coord_factory()
+    client = MagicMock()
+    client.connected = False
+    client.connect = AsyncMock(return_value=False)
+    with patch.object(coord_mod, "AsyncModbusTcpClient", return_value=client):
+        with pytest.raises(coord_mod.UpdateFailed, match="Polling failed: Modbus connection failed: Connection to board:502 failed"):
+            await coord._async_update_data()
+
+    assert coord.stats["verbunden"] is False
+    assert coord.stats["abfragen_fehler"] == 1
+    assert coord.stats["letzte_fehlermeldung"] == (
+        "Modbus connection failed: Connection to board:502 failed"
+    )
+    client.close.assert_called_once()
+
+
+async def test_setup_retry_has_translated_reason_and_preserves_cause():
+    hass = MagicMock()
+    entry = MagicMock(entry_id="e1")
+    entry.data = {"host": "board", "port": 502, "unit_id": 1}
+    entry.options = {}
+    coordinator = MagicMock(host="board", port=502)
+    original = ConfigEntryNotReady("Polling failed: connection refused")
+    coordinator.async_config_entry_first_refresh = AsyncMock(side_effect=original)
+
+    with (
+        patch.object(pkg.dr, "async_get") as registry,
+        patch.object(pkg, "WaveshareRelayCoordinator", return_value=coordinator),
+        pytest.raises(ConfigEntryNotReady) as exc_info,
+    ):
+        registry.return_value.async_get_device_by_identifier.return_value = None
+        await pkg.async_setup_entry(hass, entry)
+
+    error = exc_info.value
+    assert error.__cause__ is original
+    assert str(error) == "Polling failed: connection refused"
+    assert error.translation_domain == pkg.DOMAIN
+    assert error.translation_key == "setup_poll_failed"
+    assert error.translation_placeholders == {"host": "board", "port": "502"}
+    for language in ("en", "de"):
+        path = Path(__file__).parents[1] / f"custom_components/waveshare_relay/translations/{language}.json"
+        message = json.loads(path.read_text())["exceptions"][error.translation_key]["message"]
+        assert "board:502" in message.format(**error.translation_placeholders)
+    hass.config_entries.async_forward_entry_setups.assert_not_called()
 
 
 async def test_mode_switch_preserves_statistics(coord_factory):

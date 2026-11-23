@@ -192,7 +192,7 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
             connected = await self._client.connect()
             if not connected:
                 raise ConnectionError(
-                    f"Verbindung zu {self.host}:{self.port} fehlgeschlagen"
+                    f"Connection to {self.host}:{self.port} failed"
                 )
             self.stats["verbunden"] = True
             _LOGGER.debug("Modbus connection established: %s:%s", self.host, self.port)
@@ -200,7 +200,7 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
         except Exception as err:
             self.stats["verbunden"] = False
             raise ConnectionError(
-                f"Modbus-Verbindung fehlgeschlagen: {err}"
+                f"Modbus connection failed: {err}"
             ) from err
 
     async def async_shutdown(self) -> None:
@@ -259,7 +259,7 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
                     client, address=0, count=self.relay_count, unit_id=self.unit_id
                 )
             if result.isError():
-                raise UpdateFailed(f"FC01-Fehler: {result}")
+                raise UpdateFailed(f"FC01 error: {result}")
 
             now_mono = time.monotonic()
             elapsed_ms = round((now_mono - t0) * 1000, 1)
@@ -287,7 +287,7 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
             if self._client:
                 self._client.close()
                 self._client = None
-            raise UpdateFailed(f"Abfrage fehlgeschlagen: {err}") from err
+            raise UpdateFailed(f"Polling failed: {err}") from err
 
     # ─────────────── Modbus write (FC05) ───────────────
 
@@ -335,7 +335,7 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
                     )
             if result.isError():
                 raise ModbusException(
-                    f"{'Impuls' if pulse else 'FC05'}-Fehler Kanal {channel + 1}: {result}"
+                    f"{'Pulse' if pulse else 'FC05'} error, channel {channel + 1}: {result}"
                 )
 
             self.stats["schreiben_ok"] += 1
@@ -398,18 +398,18 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
         )
 
     async def async_all_off(self) -> None:
-        errors: list[str] = []
+        failed_channels: list[str] = []
         for ch in range(self.relay_count):
             try:
                 await self.async_write_coil(ch, False, "alle_aus")
             except Exception as err:
                 _LOGGER.warning("All-off: channel %d error: %s", ch + 1, err)
-                errors.append(f"Kanal {ch + 1}: {err}")
-        if errors:
+                failed_channels.append(str(ch + 1))
+        if failed_channels:
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="all_off_incomplete",
-                translation_placeholders={"errors": "; ".join(errors)},
+                translation_placeholders={"channels": ", ".join(failed_channels)},
             )
 
     # ─────────────── Function test ───────────────
