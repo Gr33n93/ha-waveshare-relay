@@ -68,7 +68,7 @@ STEP_USER_SCHEMA = vol.Schema(
                     options=[
                         SelectOptionDict(
                             value=str(count),
-                            label=f"{count} Relais – {RELAY_COUNT_MODELS[count]}",
+                            label=f"{count} - {RELAY_COUNT_MODELS[count]}",
                         )
                         for count in SUPPORTED_RELAY_COUNTS
                     ]
@@ -114,12 +114,12 @@ class WaveshareRelayConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     client = AsyncModbusTcpClient(host=host, port=port, timeout=3)
                     connected = await client.connect()
                     if not connected:
-                        raise ConnectionError("Keine Verbindung")
+                        raise ConnectionError(f"Connection to {host}:{port} failed")
                     result = await read_coils_compat(
                         client, address=0, count=relay_count, unit_id=unit_id
                     )
                     if result.isError():
-                        raise ConnectionError(f"Modbus-Fehler: {result}")
+                        raise ConnectionError(f"Modbus error: {result}")
                 except Exception as err:
                     _LOGGER.error("Connection test failed: %s", err)
                     errors["base"] = "cannot_connect"
@@ -176,7 +176,7 @@ class WaveshareRelayOptionsFlowHandler(config_entries.OptionsFlow):
             choices.append(
                 SelectOptionDict(
                     value=str(cfg.channel),
-                    label=f"Kanal {cfg.channel + 1} – {cfg.name} ({art})",
+                    label=f"{cfg.channel + 1} - {cfg.name} ({art})",
                 )
             )
         return self.async_show_form(

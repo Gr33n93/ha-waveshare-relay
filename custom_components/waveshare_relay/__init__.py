@@ -8,7 +8,7 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PORT, Platform
 from homeassistant.core import HomeAssistant, ServiceCall
-from homeassistant.exceptions import HomeAssistantError
+from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
 from homeassistant.helpers import device_registry as dr
 
 from .const import (
@@ -73,10 +73,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         unit_id=entry.data[CONF_UNIT_ID],
         poll_interval=entry.data.get(CONF_POLL_INTERVAL, DEFAULT_POLL_INTERVAL),
         relay_count=relay_count,
-        channel_configs=channel_configs_from_entry(entry.options, relay_count),
+        channel_configs=channel_configs_from_entry(entry.options, relay_count, hass.config.language),
     )
 
-    await coordinator.async_config_entry_first_refresh()
+    try:
+        await coordinator.async_config_entry_first_refresh()
+    except ConfigEntryNotReady as err:
+        raise ConfigEntryNotReady(
+            str(err),
+            translation_domain=DOMAIN,
+            translation_key="setup_poll_failed",
+            translation_placeholders={
+                "host": coordinator.host,
+                "port": str(coordinator.port),
+            },
+        ) from err
 
     hass.data[DOMAIN][entry.entry_id] = coordinator
 
@@ -101,7 +112,7 @@ async def _async_update_listener(
         return
     relay_count = entry.data.get(CONF_RELAY_COUNT, DEFAULT_RELAY_COUNT)
     coordinator.apply_channel_configs(
-        channel_configs_from_entry(entry.options, relay_count)
+        channel_configs_from_entry(entry.options, relay_count, hass.config.language)
     )
 
 
@@ -137,7 +148,11 @@ def _resolve_coordinators(
 
     device = dr.async_get(hass).async_get(device_id)
     if device is None:
-        raise HomeAssistantError(f"Gerät {device_id} nicht gefunden")
+        raise HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="device_not_found",
+            translation_placeholders={"device_id": device_id},
+        )
 
     coordinators: list[WaveshareRelayCoordinator] = []
     for entry_id in device.config_entries:
@@ -145,9 +160,7 @@ def _resolve_coordinators(
         if isinstance(coordinator, WaveshareRelayCoordinator):
             coordinators.append(coordinator)
     if not coordinators:
-        raise HomeAssistantError(
-            "Das gewählte Gerät gehört zu keiner aktiven Waveshare-Instanz"
-        )
+        raise HomeAssistantError(translation_domain=DOMAIN, translation_key="device_not_active")
     return coordinators
 
 

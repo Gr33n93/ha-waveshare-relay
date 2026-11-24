@@ -1,8 +1,11 @@
 """Tests for the coordinator: write paths, guards, statistics, config adoption."""
+import asyncio
+import json
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from homeassistant.exceptions import HomeAssistantError
+from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
 
 import custom_components.waveshare_relay as pkg
 from custom_components.waveshare_relay import coordinator as coord_mod
@@ -44,6 +47,52 @@ async def test_pulse_path(coord_factory):
     coord.async_request_refresh.assert_awaited_once()
 
 
+@pytest.mark.parametrize("corruption", ["on_value", "wrong_address", "framer_error"])
+async def test_failed_encoding_check_blocks_only_pulses(coord_factory, corruption):
+    # Corrupt the serialized frame; the standalone request encoder would still pass.
+    def broken_frame(_request):
+        if corruption == "framer_error":
+            raise ValueError("cannot encode pulse")
+        suffix = "0204 ff00" if corruption == "on_value" else "0004 0005"
+        return bytes.fromhex("0000 0000 0006 01 05 " + suffix)
+
+    with patch("custom_components.waveshare_relay.pulse._frame", side_effect=broken_frame) as probe:
+        coord, write, pulse, timers = coord_factory()
+    probe.assert_called_once()
+    with patch.object(coord, "_ensure_connected", new_callable=AsyncMock) as connect:
+        with pytest.raises(HomeAssistantError) as caught:
+            await coord.async_pulse(0, 500)
+        connect.assert_not_awaited()
+    assert caught.value.translation_domain == pkg.DOMAIN
+    assert caught.value.translation_key == "pulse_encoding_unsupported"
+    pulse.assert_not_awaited()
+    write.assert_not_awaited()
+    assert not timers and not any(coord.relay_states)
+    assert coord.stats["schreibvorgaenge_gesamt"] == 0
+    assert not coord.channel_stats[0]["letzter_impuls"]
+
+    await coord.async_write_coil(1, True)
+    await coord.async_write_coil(0, False)
+    await coord.async_all_off()
+    assert [(c.kwargs["address"], c.kwargs["value"]) for c in write.await_args_list] == [
+        (1, True), (0, False), *((ch, False) for ch in range(coord.relay_count))
+    ]
+    pulse.assert_not_awaited()
+
+
+@pytest.mark.parametrize("language,label", [("de", "Impuls nicht gesendet"), ("en", "Pulse not sent")])
+async def test_missing_pulse_encoder_reports_localized_action_error(coord_factory, language, label):
+    with patch("custom_components.waveshare_relay.modbus_compat._pulse", None):
+        coord, write, pulse, _ = coord_factory()
+        with pytest.raises(HomeAssistantError) as caught:
+            await coord.async_pulse(0, 500)
+    write.assert_not_awaited()
+    pulse.assert_not_awaited()
+    path = Path(__file__).parents[1] / f"custom_components/waveshare_relay/translations/{language}.json"
+    message = json.loads(path.read_text())["exceptions"][caught.value.translation_key]["message"]
+    assert message.startswith(label)
+
+
 async def test_duty_accumulation(coord_factory):
     coord, _, _, _ = coord_factory()
     clock = 1000.0
@@ -75,6 +124,20 @@ async def test_manual_commands_blocked_during_test(coord_factory):
     await coord.async_write_coil(0, False, "alle_aus")
 
 
+async def test_local_updates_do_not_end_an_outage():
+    hass = MagicMock()
+    hass.async_create_task = asyncio.create_task
+    # No config-entry setup in this test; keep the real coordinator notifications.
+    with patch("homeassistant.helpers.frame.report_usage"):
+        coord = coord_mod.WaveshareRelayCoordinator(hass, "board", 502, 1)
+    coord.async_set_update_error(ConnectionError("offline"))
+    coord.reset_stats()
+    assert coord.last_update_success is False
+    coord.async_all_off = AsyncMock(side_effect=ConnectionError("still offline"))
+    await coord._run_test(1, 0.1, True)
+    assert coord.last_update_success is False
+
+
 async def test_function_test_race_and_stuck_flag(coord_factory):
     coord, _, _, _ = coord_factory()
     await coord.async_start_test(1, 0.1, True)
@@ -86,13 +149,132 @@ async def test_function_test_race_and_stuck_flag(coord_factory):
     assert coord.test_running is False  # reset even if the task never ran
 
 
-async def test_modbus_error_counted_and_raised(coord_factory):
+async def test_modbus_error_counted_and_translated(coord_factory):
     coord, _, _, _ = coord_factory()
     coord_mod.write_coil_compat = AsyncMock(return_value=FakeResult(err=True))
-    with pytest.raises(coord_mod.ModbusException):
+    with pytest.raises(HomeAssistantError) as exc_info:
         await coord.async_write_coil(3, True)
+    assert exc_info.value.translation_domain == coord_mod.DOMAIN
+    assert exc_info.value.translation_key == "write_failed"
+    assert exc_info.value.translation_placeholders == {"channel": "4"}
+    for language in ("en", "de"):
+        path = Path(__file__).parents[1] / (
+            f"custom_components/waveshare_relay/translations/{language}.json"
+        )
+        message = json.loads(path.read_text())["exceptions"]["write_failed"]["message"]
+        assert "4" in message.format(**exc_info.value.translation_placeholders)
     assert coord.stats["schreiben_fehler"] == 1
     assert coord.channel_stats[3]["schreibfehler"] == 1
+
+
+async def test_all_off_reports_failed_channels_and_logs_details(coord_factory, caplog):
+    coord, write, _, _ = coord_factory()
+    write.side_effect = [
+        FakeResult(), FakeResult(err=True), FakeResult(err=True), FakeResult()
+    ]
+
+    with pytest.raises(HomeAssistantError) as exc_info:
+        await coord.async_all_off()
+
+    error = exc_info.value
+    assert write.await_count == 4
+    assert error.translation_key == "all_off_incomplete"
+    assert error.translation_placeholders == {"channels": "2, 3"}
+    for channel in (2, 3):
+        assert any(
+            f"All-off: channel {channel} error:" in msg and "FC05 error" in msg
+            for msg in caplog.messages
+        )
+    for language, label in (("en", "Failed channels: 2, 3"), ("de", "Fehlgeschlagene Kanäle: 2, 3")):
+        path = Path(__file__).parents[1] / f"custom_components/waveshare_relay/translations/{language}.json"
+        message = json.loads(path.read_text())["exceptions"][error.translation_key]["message"]
+        assert label in message.format(**error.translation_placeholders)
+
+
+async def test_first_poll_connection_failure_is_translated_and_records_details(
+    coord_factory,
+):
+    coord, _, _, _ = coord_factory()
+    client = MagicMock()
+    client.connected = False
+    client.connect = AsyncMock(return_value=False)
+    with patch.object(coord_mod, "AsyncModbusTcpClient", return_value=client):
+        with pytest.raises(coord_mod.UpdateFailed) as exc_info:
+            await coord._async_update_data()
+
+    assert exc_info.value.translation_domain == coord_mod.DOMAIN
+    assert exc_info.value.translation_key == "connection_failed"
+    assert exc_info.value.translation_placeholders == {
+        "host": "board",
+        "port": "502",
+    }
+    for language, label in (
+        ("en", "board:502"),
+        ("de", "board:502"),
+    ):
+        path = Path(__file__).parents[1] / (
+            f"custom_components/waveshare_relay/translations/{language}.json"
+        )
+        message = json.loads(path.read_text())["exceptions"][
+            exc_info.value.translation_key
+        ]["message"]
+        assert label in message.format(**exc_info.value.translation_placeholders)
+    assert coord.stats["verbunden"] is False
+    assert coord.stats["abfragen_fehler"] == 1
+    assert coord.stats["letzte_fehlermeldung"] == (
+        "Modbus connection failed: Connection to board:502 failed"
+    )
+    client.close.assert_called_once()
+
+
+async def test_write_connection_failure_is_translated(coord_factory):
+    coord, _, _, _ = coord_factory()
+    cause = ConnectionError("connection refused")
+    coord._ensure_connected = AsyncMock(side_effect=cause)
+
+    with pytest.raises(HomeAssistantError) as exc_info:
+        await coord.async_write_coil(0, True)
+
+    error = exc_info.value
+    assert error.translation_key == "connection_failed"
+    assert error.translation_placeholders == {"host": "board", "port": "502"}
+    assert error.__cause__ is cause
+    for language in ("de", "en"):
+        path = Path(__file__).parents[1] / f"custom_components/waveshare_relay/translations/{language}.json"
+        message = json.loads(path.read_text())["exceptions"][error.translation_key]["message"]
+        rendered = message.format(**error.translation_placeholders)
+        assert "board:502" in rendered
+        assert str(cause) not in rendered
+
+
+async def test_setup_retry_has_translated_reason_and_preserves_cause():
+    hass = MagicMock()
+    entry = MagicMock(entry_id="e1")
+    entry.data = {"host": "board", "port": 502, "unit_id": 1}
+    entry.options = {}
+    coordinator = MagicMock(host="board", port=502)
+    original = ConfigEntryNotReady("Polling failed: connection refused")
+    coordinator.async_config_entry_first_refresh = AsyncMock(side_effect=original)
+
+    with (
+        patch.object(pkg.dr, "async_get") as registry,
+        patch.object(pkg, "WaveshareRelayCoordinator", return_value=coordinator),
+        pytest.raises(ConfigEntryNotReady) as exc_info,
+    ):
+        registry.return_value.async_get_device_by_identifier.return_value = None
+        await pkg.async_setup_entry(hass, entry)
+
+    error = exc_info.value
+    assert error.__cause__ is original
+    assert str(error) == "Polling failed: connection refused"
+    assert error.translation_domain == pkg.DOMAIN
+    assert error.translation_key == "setup_poll_failed"
+    assert error.translation_placeholders == {"host": "board", "port": "502"}
+    for language in ("en", "de"):
+        path = Path(__file__).parents[1] / f"custom_components/waveshare_relay/translations/{language}.json"
+        message = json.loads(path.read_text())["exceptions"][error.translation_key]["message"]
+        assert "board:502" in message.format(**error.translation_placeholders)
+    hass.config_entries.async_forward_entry_setups.assert_not_called()
 
 
 async def test_mode_switch_preserves_statistics(coord_factory):

@@ -34,15 +34,16 @@ class ChannelConfig:
     pulse_duration_ms: int = DEFAULT_PULSE_DURATION_MS
 
 
-def default_channel_configs(relay_count: int) -> list[ChannelConfig]:
+def default_channel_configs(relay_count: int, language: str = "de") -> list[ChannelConfig]:
     """Build default profiles: every channel in continuous mode."""
     return [
-        ChannelConfig(channel=i, name=f"Relais {i + 1}") for i in range(relay_count)
+        ChannelConfig(channel=i, name=f"{'Relais' if language.startswith('de') else 'Relay'} {i + 1}")
+        for i in range(relay_count)
     ]
 
 
 def channel_configs_from_entry(
-    entry_options: dict, relay_count: int
+    entry_options: dict, relay_count: int, language: str = "de"
 ) -> list[ChannelConfig]:
     """Read channel profiles from entry options.
 
@@ -50,7 +51,7 @@ def channel_configs_from_entry(
     default name, so an update never changes existing installations.
     """
     raw: dict = entry_options.get(CONF_CHANNEL_CONFIGS) or {}
-    defaults = default_channel_configs(relay_count)
+    defaults = default_channel_configs(relay_count, language)
 
     configs: list[ChannelConfig] = []
     for i in range(relay_count):

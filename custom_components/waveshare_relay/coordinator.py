@@ -17,7 +17,12 @@ from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import DOMAIN, DEFAULT_POLL_INTERVAL, DEFAULT_RELAY_COUNT, PULSE_ADDR_ON
-from .modbus_compat import read_coils_compat, write_coil_compat, write_pulse_compat
+from .modbus_compat import (
+    pulse_encoding_supported,
+    read_coils_compat,
+    write_coil_compat,
+    write_pulse_compat,
+)
 from .models import ChannelConfig, default_channel_configs
 from .storage import SAVE_INTERVAL, WaveshareStatsStore, resolve_mac
 
@@ -78,6 +83,7 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
         self.host = host
         self.port = port
         self.unit_id = unit_id
+        self._pulse_encoding_ok = pulse_encoding_supported(unit_id)
         self.relay_count = relay_count
         # Channel profiles; apply_channel_configs pads missing entries and
         # wires relay_names - also at runtime after option changes.
@@ -192,7 +198,7 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
             connected = await self._client.connect()
             if not connected:
                 raise ConnectionError(
-                    f"Verbindung zu {self.host}:{self.port} fehlgeschlagen"
+                    f"Connection to {self.host}:{self.port} failed"
                 )
             self.stats["verbunden"] = True
             _LOGGER.debug("Modbus connection established: %s:%s", self.host, self.port)
@@ -200,7 +206,7 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
         except Exception as err:
             self.stats["verbunden"] = False
             raise ConnectionError(
-                f"Modbus-Verbindung fehlgeschlagen: {err}"
+                f"Modbus connection failed: {err}"
             ) from err
 
     async def async_shutdown(self) -> None:
@@ -259,7 +265,11 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
                     client, address=0, count=self.relay_count, unit_id=self.unit_id
                 )
             if result.isError():
-                raise UpdateFailed(f"FC01-Fehler: {result}")
+                raise UpdateFailed(
+                    translation_domain=DOMAIN,
+                    translation_key="fc01_error",
+                    translation_placeholders={"error": str(result)}
+                )
 
             now_mono = time.monotonic()
             elapsed_ms = round((now_mono - t0) * 1000, 1)
@@ -287,7 +297,20 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
             if self._client:
                 self._client.close()
                 self._client = None
-            raise UpdateFailed(f"Abfrage fehlgeschlagen: {err}") from err
+            if isinstance(err, ConnectionError):
+                raise UpdateFailed(
+                    translation_domain=DOMAIN,
+                    translation_key="connection_failed",
+                    translation_placeholders={
+                        "host": self.host,
+                        "port": str(self.port),
+                    },
+                ) from err
+            raise UpdateFailed(
+                translation_domain=DOMAIN,
+                translation_key="poll_failed",
+                translation_placeholders={"error": str(err)}
+            ) from err
 
     # ─────────────── Modbus write (FC05) ───────────────
 
@@ -299,8 +322,7 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
         """
         if self.test_running and source not in ("Funktionstest", "alle_aus"):
             raise HomeAssistantError(
-                "Funktionstest läuft – manuelle Schaltbefehle werden solange "
-                "abgelehnt (Alle-Aus bleibt möglich)."
+                translation_domain=DOMAIN, translation_key="test_running"
             )
 
     async def _async_write(
@@ -309,14 +331,18 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
         source: str,
         *,
         value: bool = False,
-        pulse_duration_ms: int = 0,
+        pulse_duration_ms: int | None = None,
     ) -> None:
         """Unified write path: FC05 write or native pulse.
 
         Centralizes lock, connection, statistics and error handling;
         async_write_coil and async_pulse are the public facades.
         """
-        pulse = pulse_duration_ms > 0
+        pulse = pulse_duration_ms is not None
+        if pulse and not self._pulse_encoding_ok:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN, translation_key="pulse_encoding_unsupported"
+            )
         self._ensure_write_allowed(source)
         self.stats["schreibvorgaenge_gesamt"] += 1
         cs = self.channel_stats[channel]
@@ -336,7 +362,7 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
                     )
             if result.isError():
                 raise ModbusException(
-                    f"{'Impuls' if pulse else 'FC05'}-Fehler Kanal {channel + 1}: {result}"
+                    f"{'Pulse' if pulse else 'FC05'} error, channel {channel + 1}: {result}"
                 )
 
             self.stats["schreiben_ok"] += 1
@@ -356,9 +382,7 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
                 self._apply_relay_state(channel, True)
             else:
                 self._apply_relay_state(channel, value)
-            self.async_set_updated_data(
-                {"relay_states": self.relay_states, "stats": self.stats}
-            )
+            self._notify_entities()
             if pulse:
                 self._schedule_pulse_refresh(channel, pulse_duration_ms)
         except Exception as err:
@@ -370,7 +394,20 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
                 "%s channel %d failed: %s",
                 "Pulse" if pulse else "Write", channel + 1, err,
             )
-            raise
+            if isinstance(err, ConnectionError):
+                raise HomeAssistantError(
+                    translation_domain=DOMAIN,
+                    translation_key="connection_failed",
+                    translation_placeholders={
+                        "host": self.host,
+                        "port": str(self.port),
+                    },
+                ) from err
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="write_failed",
+                translation_placeholders={"channel": str(channel + 1)},
+            ) from err
 
     async def async_write_coil(
         self, channel: int, value: bool, source: str = "manuell"
@@ -399,16 +436,19 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
         )
 
     async def async_all_off(self) -> None:
-        errors: list[str] = []
+        failed_channels: list[str] = []
         for ch in range(self.relay_count):
             try:
                 await self.async_write_coil(ch, False, "alle_aus")
             except Exception as err:
-                _LOGGER.warning("All-off: channel %d error: %s", ch + 1, err)
-                errors.append(f"Kanal {ch + 1}: {err}")
-        if errors:
+                # Keep the technical cause in the log, not the localized UI wrapper.
+                _LOGGER.warning("All-off: channel %d error: %s", ch + 1, err.__cause__ or err)
+                failed_channels.append(str(ch + 1))
+        if failed_channels:
             raise HomeAssistantError(
-                "Alle-Aus unvollständig: " + "; ".join(errors)
+                translation_domain=DOMAIN,
+                translation_key="all_off_incomplete",
+                translation_placeholders={"channels": ", ".join(failed_channels)},
             )
 
     # ─────────────── Function test ───────────────
@@ -449,9 +489,7 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
                     if self.test_stop:
                         return
                     self.test_current_channel = ch + 1
-                    self.async_set_updated_data(
-                        {"relay_states": self.relay_states, "stats": self.stats}
-                    )
+                    self._notify_entities()
                     await self.async_write_coil(ch, True, "Funktionstest")
                     await asyncio.sleep(laufzeit_s)
                     if self.test_stop:
@@ -472,9 +510,7 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
                 pass
             self.test_running = False
             self.test_current_channel = 0
-            self.async_set_updated_data(
-                {"relay_states": self.relay_states, "stats": self.stats}
-            )
+            self._notify_entities()
             _LOGGER.info("Function test finished")
 
     async def async_stop_test(self) -> None:
@@ -501,13 +537,16 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
             self.channel_stats[index] = _fresh_channel_stats()
             self.channel_stats[index]["zustand"] = self.relay_states[index]
             self.channel_stats[index]["letzter_wechsel"] = now_mono
-        self.async_set_updated_data(
-            {"relay_states": self.relay_states, "stats": self.stats}
-        )
+        self._notify_entities()
         _LOGGER.info("Statistics reset")
         # first_seen deliberately survives: it is a board fact, not a statistic.
         with suppress(Exception):
             self.hass.async_create_task(self._async_persist())
+
+    def _notify_entities(self) -> None:
+        """Publish local state without marking a board poll successful."""
+        self.data = {"relay_states": self.relay_states, "stats": self.stats}
+        self.async_update_listeners()
 
 
 def _iso_now() -> str:

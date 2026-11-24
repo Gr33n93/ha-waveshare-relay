@@ -75,6 +75,11 @@ Entities automatisch angelegt.
 | `sensor` | 12 + 5 pro Relais | Statistik, Laufzeiten, Zähler und Teststatus |
 | `button` | 4 | Funktionstest, Alle aus, Statistik zurücksetzen |
 
+Der Funktionstest-Sensor liefert jetzt die Rohzustände `idle` und `running`,
+die in der Oberfläche übersetzt werden. Automationen mit den bisherigen deutschen
+Zustandstexten müssen angepasst werden; das Attribut `aktueller_kanal` enthält
+den aktuellen Kanal.
+
 ## Modus pro Kanal (Switch / Pulse)
 
 Jeder Kanal ist über die Integrationsoptionen (**Geräte & Dienste → Waveshare
@@ -89,6 +94,14 @@ Anzeigename, Modus und Impulsdauer.
   wenn Home Assistant in der Zwischenzeit nicht erreichbar ist. Gedacht für
   bistabile Relais bzw. Stromstoßschalter. Der Ausschalter beendet einen
   laufenden Impuls sicher.
+
+Beim Laden der Integration wird ein Modbus-Telegramm mit einer bekannten
+Impulsdauer erzeugt und geprüft, **ohne etwas an das Board zu senden**.
+Schlägt die Prüfung fehl, meldet Home Assistant beim Einschalten eines
+Impulskanals **„Impuls nicht gesendet“**. Es wird kein Ersatzbefehl gesendet.
+Kanäle im Modus **Switch**, das Ausschalten einzelner Relais und **Alle Relais
+aus** bleiben nutzbar. Nach einem Bibliotheksupdate wird beim nächsten Laden
+erneut geprüft.
 
 Der Moduswechsel ändert weder Name noch Entity-ID noch Unique-ID –
 Dashboards und Automationen bleiben beim Umschalten unverändert. Zusätzliche
@@ -132,15 +145,21 @@ Sicherheitsstopp jederzeit verfügbar.
 
 ## Verbindungsüberwachung
 
-Fällt das Board aus (Strom- oder Netzwerkverlust), gehen alle Entities des
-Geräts auf **Nicht verfügbar** und der Binary-Sensor **„Verbindung"**
-(`binary_sensor.*_verbindung`) auf **Aus**. Sobald das Board wieder erreichbar
-ist, verbindet sich die Integration automatisch neu – ohne Neustart. Der
-letzte Fehler steht in den Diagnose-Sensoren „Letzte Fehlermeldung" und
-„Letzter Fehler (Zeit)".
+Nach erfolgreicher Einrichtung meldet der Sensor **Verbindung** `off`, wenn
+eine Abfrage des Boards fehlschlägt. Die Relais und die übrigen Entitäten
+werden **nicht verfügbar**. Sobald eine Abfrage wieder gelingt, meldet der
+Sensor `on` und die Integration liest die Relaiszustände neu ein. Ein Neustart
+ist nicht nötig. Unter **Letzte Fehlermeldung** und **Letzter Fehler (Zeit)**
+findest du nach der Wiederverbindung die Details; technische Fehlertexte können
+auch bei deutscher Oberfläche auf Englisch erscheinen.
 
-Eine aktive Benachrichtigung richtest du dir selbst per Automation ein.
-Beispiel (Benachrichtigung, wenn das Board länger als eine Minute weg ist):
+Den Verbindungssensor und seine Entitäts-ID findest du unter
+**Einstellungen → Geräte & Dienste → Waveshare Modbus PoE Ethernet Relay**.
+Wähle dein Gerät und öffne unter **Diagnose** den Sensor **Verbindung**.
+Kopiere seine Entitäts-ID aus den Sensoreinstellungen.
+
+Die folgende Automation benachrichtigt dich, wenn das Board eine Minute lang
+nicht erreichbar ist. Ersetze die Beispiel-ID durch die kopierte Entitäts-ID:
 
 ```yaml
 automation:
@@ -148,20 +167,18 @@ automation:
     mode: single
     trigger:
       - platform: state
-        entity_id: binary_sensor.waveshare_relay_verbindung
+        entity_id: binary_sensor.dein_verbindungssensor
         to: "off"
         for: "00:01:00"
     action:
-      - service: notify.persistent_notification
+      - service: persistent_notification.create
         data:
           title: "Waveshare Relay offline"
           message: "Das Board ist seit über einer Minute nicht erreichbar."
 ```
 
-Für eine Handy-Benachrichtigung `notify.persistent_notification` durch
-`notify.mobile_app_<gerät>` ersetzen. Die tatsächliche Entity-ID kann je nach
-Gerätename abweichen – unter **Entwicklerwerkzeuge → Zustände** nach
-`verbindung` suchen.
+Für eine Benachrichtigung auf dem Handy ersetze `persistent_notification.create`
+durch die Aktion `notify.mobile_app_<gerät>` deines Handys.
 
 Hinweis: Impulskanäle (Modus „Pulse") werden bei einer Wiederherstellung
 niemals automatisch erneut ausgelöst; normale Kanäle zeigen nach der

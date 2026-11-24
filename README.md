@@ -75,6 +75,10 @@ created automatically.
 | `sensor` | 12 + 5 per relay | Statistics, duty times, counters and test status |
 | `button` | 4 | Function test, all off, reset statistics |
 
+The function-test sensor now reports the raw states `idle` and `running`,
+translated in the interface. Automations using the previous German state text
+must be updated; the `aktueller_kanal` attribute contains the current channel.
+
 ## Per-channel mode (Switch / Pulse)
 
 Every channel is configurable individually through the integration options
@@ -88,6 +92,13 @@ mode select: display name, mode and pulse duration.
   board switches back off by itself after the configured duration - even
   if Home Assistant is unreachable in between. Intended for bistable
   relays and impulse switches. Turning off safely ends a running pulse.
+
+When the integration loads, it builds and checks a Modbus message with a known
+pulse duration **without sending anything to the board**. If the check fails,
+turning on a pulse channel reports **“Pulse not sent”**. No substitute command
+is sent. Channels in **Switch** mode, turning individual relays off and **All
+relays off** remain available. After a library update, the check runs again the
+next time the integration loads.
 
 Changing the mode changes neither name, entity ID nor unique ID -
 dashboards and automations keep working. Additional attributes
@@ -131,15 +142,18 @@ available at all times as a safety stop.
 
 ## Connection monitoring
 
-When the board disappears (power or network loss), all entities of the
-device go **unavailable** and the **connection** binary sensor
-(`binary_sensor.*_verbindung`) turns **off**. As soon as the board is
-reachable again the integration reconnects automatically - no restart
-required. The last error is available in the diagnostic sensors "Letzte
-Fehlermeldung" and "Letzter Fehler (Zeit)".
+After successful setup, the **Connection** sensor reports `off` if a board
+poll fails. The relays and other entities become **unavailable**. When a poll
+succeeds again, the sensor reports `on` and the integration reads the relay
+states from the board. No restart is needed. After reconnection, see **Last
+error message** and **Last error time** for the technical details.
 
-Active notifications are up to you - a ready-to-use example (notify when
-the board has been gone for more than a minute):
+To find the entity ID, open **Settings → Devices & services → Waveshare Modbus
+PoE Ethernet Relay**, select your device and open the **Connection** sensor
+under **Diagnostic**. Copy the entity ID from the sensor settings.
+
+This automation notifies you when the board has been unreachable for one
+minute. Replace the example entity ID with the one you copied:
 
 ```yaml
 automation:
@@ -147,20 +161,18 @@ automation:
     mode: single
     trigger:
       - platform: state
-        entity_id: binary_sensor.waveshare_relay_verbindung
+        entity_id: binary_sensor.replace_with_your_connection_sensor
         to: "off"
         for: "00:01:00"
     action:
-      - service: notify.persistent_notification
+      - service: persistent_notification.create
         data:
           title: "Waveshare Relay offline"
           message: "The board has been unreachable for over a minute."
 ```
 
-For phone notifications replace `notify.persistent_notification` with
-`notify.mobile_app_<device>`. The actual entity ID may differ depending
-on your device name - search for `verbindung` under **Developer Tools ->
-States**.
+For phone notifications, replace `persistent_notification.create` with your
+phone's `notify.mobile_app_<device>` action.
 
 Note: pulse channels (mode "Pulse") are never re-triggered automatically
 on reconnection; regular channels show the actual board state after

@@ -32,7 +32,7 @@ class WaveshareConnectionSensor(
     """Connection status of the relay board."""
 
     _attr_has_entity_name = True
-    _attr_name = "Verbindung"
+    _attr_translation_key = "connection"
     _attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
     _attr_icon = "mdi:lan-connect"
     _attr_entity_category = EntityCategory.DIAGNOSTIC
@@ -41,6 +41,11 @@ class WaveshareConnectionSensor(
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry.entry_id}_connection"
         self._attr_device_info = device_info(entry, coordinator)
+
+    @property
+    def available(self) -> bool:
+        """A failed poll is this sensor's off state, not a missing reading."""
+        return True
 
     @property
     def is_on(self) -> bool:
