@@ -99,7 +99,7 @@ class WaveshareGlobalSensor(_BoardSensor):
     def __init__(self, coordinator, entry, sdef: dict) -> None:
         super().__init__(coordinator, entry, f"stat_{sdef['key']}", sdef["key"])
         self._key = sdef["key"]
-        self._last_write = 0.0
+        self._last_write: float | None = None
         self._attr_icon = sdef["icon"]
         self._attr_native_unit_of_measurement = sdef["unit"]
         self._attr_state_class = sdef["cls"]
@@ -112,7 +112,7 @@ class WaveshareGlobalSensor(_BoardSensor):
     def _handle_coordinator_update(self) -> None:
         if self._key in CHURNY_KEYS:
             now = time.monotonic()
-            if now - self._last_write < CHURN_UPDATE_INTERVAL:
+            if self._last_write is not None and now - self._last_write < CHURN_UPDATE_INTERVAL:
                 return
             self._last_write = now
         self.async_write_ha_state()

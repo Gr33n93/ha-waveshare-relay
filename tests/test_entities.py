@@ -184,12 +184,16 @@ def test_global_sensor_throttle_spares_error_counters():
     churny.async_write_ha_state = lambda: churn_writes.append(1)
     errors.async_write_ha_state = lambda: error_writes.append(1)
 
-    churny._handle_coordinator_update()
-    churny._handle_coordinator_update()
-    errors._handle_coordinator_update()
-    errors._handle_coordinator_update()
-    assert len(churn_writes) == 1  # high-frequency value: throttled
-    assert len(error_writes) == 2  # errors stay immediate
+    with patch.object(sensor_mod, "time") as clock:
+        # Start at boot: zero is a valid time for the first write.
+        for poll, (now, expected) in enumerate(
+            [(0.0, 1), (1.0, 1), (59.9, 1), (60.0, 2), (61.0, 2)], start=1
+        ):
+            clock.monotonic.return_value = now
+            churny._handle_coordinator_update()
+            errors._handle_coordinator_update()
+            assert len(churn_writes) == expected
+            assert len(error_writes) == poll  # never throttled
 
 
 async def test_mode_select_persists_and_is_idempotent():
