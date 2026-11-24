@@ -62,7 +62,7 @@
       "reset_stats": {"name": "Reset statistics"}
     },
     "select": {
-      "channel_mode": {"name": "{channel} mode", "state": {"Switch": "Switch", "Pulse": "Pulse"}}
+      "channel_mode": {"name": "{channel} mode"}
     },
     "sensor": {
       "abfragen_gesamt": {"name": "Total polls"},
