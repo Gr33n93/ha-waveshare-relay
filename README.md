@@ -93,6 +93,13 @@ mode select: display name, mode and pulse duration.
   if Home Assistant is unreachable in between. Intended for bistable
   relays and impulse switches. Turning off safely ends a running pulse.
 
+When the integration loads, it builds and checks a Modbus message with a known
+pulse duration **without sending anything to the board**. If the check fails,
+turning on a pulse channel reports **“Pulse not sent”**. No substitute command
+is sent. Channels in **Switch** mode, turning individual relays off and **All
+relays off** remain available. After a library update, the check runs again the
+next time the integration loads.
+
 Changing the mode changes neither name, entity ID nor unique ID -
 dashboards and automations keep working. Additional attributes
 (`betriebsart` with `switch`/`pulse`, `impulsdauer_ms`, `letzter_impuls`)
@@ -135,15 +142,18 @@ available at all times as a safety stop.
 
 ## Connection monitoring
 
-When the board disappears (power or network loss), all entities of the
-device become **unavailable** and the **Connection** binary sensor turns **off**.
-As soon as the board is reachable again the integration reconnects automatically - no restart required. The last error is recorded in the
-diagnostic sensors **Last error message** and **Last error time**, which become available again after reconnecting.
+After successful setup, the **Connection** sensor reports `off` if a board
+poll fails. The relays and other entities become **unavailable**. When a poll
+succeeds again, the sensor reports `on` and the integration reads the relay
+states from the board. No restart is needed. After reconnection, see **Last
+error message** and **Last error time** for the technical details.
 
-To find your connection sensor and its entity ID, open **Settings → Devices & services → Waveshare Modbus PoE Ethernet Relay**, select your device, then look for its connection binary sensor in the **Diagnostic** section. Open the sensor to see its entity ID. Names and IDs vary with the installation language and device name.
+To find the entity ID, open **Settings → Devices & services → Waveshare Modbus
+PoE Ethernet Relay**, select your device and open the **Connection** sensor
+under **Diagnostic**. Copy the entity ID from the sensor settings.
 
-Active notifications are up to you - this example notifies you when
-the board has been gone for more than a minute:
+This automation notifies you when the board has been unreachable for one
+minute. Replace the example entity ID with the one you copied:
 
 ```yaml
 automation:
@@ -155,15 +165,14 @@ automation:
         to: "off"
         for: "00:01:00"
     action:
-      - service: notify.persistent_notification
+      - service: persistent_notification.create
         data:
           title: "Waveshare Relay offline"
           message: "The board has been unreachable for over a minute."
 ```
 
-For phone notifications replace `notify.persistent_notification` with
-`notify.mobile_app_<device>`. Replace the example entity ID with the one
-from your device page.
+For phone notifications, replace `persistent_notification.create` with your
+phone's `notify.mobile_app_<device>` action.
 
 Note: pulse channels (mode "Pulse") are never re-triggered automatically
 on reconnection; regular channels show the actual board state after

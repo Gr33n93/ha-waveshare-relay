@@ -17,7 +17,12 @@ from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import DOMAIN, DEFAULT_POLL_INTERVAL, DEFAULT_RELAY_COUNT, PULSE_ADDR_ON
-from .modbus_compat import read_coils_compat, write_coil_compat, write_pulse_compat
+from .modbus_compat import (
+    pulse_encoding_supported,
+    read_coils_compat,
+    write_coil_compat,
+    write_pulse_compat,
+)
 from .models import ChannelConfig, default_channel_configs
 from .storage import SAVE_INTERVAL, WaveshareStatsStore, resolve_mac
 
@@ -78,6 +83,7 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
         self.host = host
         self.port = port
         self.unit_id = unit_id
+        self._pulse_encoding_ok = pulse_encoding_supported(unit_id)
         self.relay_count = relay_count
         # Channel profiles; apply_channel_configs pads missing entries and
         # wires relay_names - also at runtime after option changes.
@@ -325,14 +331,18 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
         source: str,
         *,
         value: bool = False,
-        pulse_duration_ms: int = 0,
+        pulse_duration_ms: int | None = None,
     ) -> None:
         """Unified write path: FC05 write or native pulse.
 
         Centralizes lock, connection, statistics and error handling;
         async_write_coil and async_pulse are the public facades.
         """
-        pulse = pulse_duration_ms > 0
+        pulse = pulse_duration_ms is not None
+        if pulse and not self._pulse_encoding_ok:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN, translation_key="pulse_encoding_unsupported"
+            )
         self._ensure_write_allowed(source)
         self.stats["schreibvorgaenge_gesamt"] += 1
         cs = self.channel_stats[channel]
@@ -372,9 +382,7 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
                 self._apply_relay_state(channel, True)
             else:
                 self._apply_relay_state(channel, value)
-            self.async_set_updated_data(
-                {"relay_states": self.relay_states, "stats": self.stats}
-            )
+            self._notify_entities()
             if pulse:
                 self._schedule_pulse_refresh(channel, pulse_duration_ms)
         except Exception as err:
@@ -433,7 +441,8 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
             try:
                 await self.async_write_coil(ch, False, "alle_aus")
             except Exception as err:
-                _LOGGER.warning("All-off: channel %d error: %s", ch + 1, err)
+                # Keep the technical cause in the log, not the localized UI wrapper.
+                _LOGGER.warning("All-off: channel %d error: %s", ch + 1, err.__cause__ or err)
                 failed_channels.append(str(ch + 1))
         if failed_channels:
             raise HomeAssistantError(
@@ -480,9 +489,7 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
                     if self.test_stop:
                         return
                     self.test_current_channel = ch + 1
-                    self.async_set_updated_data(
-                        {"relay_states": self.relay_states, "stats": self.stats}
-                    )
+                    self._notify_entities()
                     await self.async_write_coil(ch, True, "Funktionstest")
                     await asyncio.sleep(laufzeit_s)
                     if self.test_stop:
@@ -503,9 +510,7 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
                 pass
             self.test_running = False
             self.test_current_channel = 0
-            self.async_set_updated_data(
-                {"relay_states": self.relay_states, "stats": self.stats}
-            )
+            self._notify_entities()
             _LOGGER.info("Function test finished")
 
     async def async_stop_test(self) -> None:
@@ -532,13 +537,16 @@ class WaveshareRelayCoordinator(DataUpdateCoordinator):
             self.channel_stats[index] = _fresh_channel_stats()
             self.channel_stats[index]["zustand"] = self.relay_states[index]
             self.channel_stats[index]["letzter_wechsel"] = now_mono
-        self.async_set_updated_data(
-            {"relay_states": self.relay_states, "stats": self.stats}
-        )
+        self._notify_entities()
         _LOGGER.info("Statistics reset")
         # first_seen deliberately survives: it is a board fact, not a statistic.
         with suppress(Exception):
             self.hass.async_create_task(self._async_persist())
+
+    def _notify_entities(self) -> None:
+        """Publish local state without marking a board poll successful."""
+        self.data = {"relay_states": self.relay_states, "stats": self.stats}
+        self.async_update_listeners()
 
 
 def _iso_now() -> str:

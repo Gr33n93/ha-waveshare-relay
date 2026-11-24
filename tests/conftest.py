@@ -68,7 +68,7 @@ def coord_factory():
                 hass, "board", 502, 1, relay_count=relay_count, channel_configs=configs
             )
         coord.hass = hass
-        coord.async_set_updated_data = MagicMock()
+        coord.async_update_listeners = MagicMock()
         coord.async_request_refresh = AsyncMock()
         return coord, write, pulse, timers
 

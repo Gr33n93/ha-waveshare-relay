@@ -43,6 +43,11 @@ class WaveshareConnectionSensor(
         self._attr_device_info = device_info(entry, coordinator)
 
     @property
+    def available(self) -> bool:
+        """A failed poll is this sensor's off state, not a missing reading."""
+        return True
+
+    @property
     def is_on(self) -> bool:
         """Connected when the last poll succeeded."""
         return self.coordinator.last_update_success

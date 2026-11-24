@@ -1,10 +1,13 @@
 """Tests for the pymodbus compatibility layer and the pulse encoding."""
 import asyncio
+import socket
 import struct
+from unittest.mock import AsyncMock
 
 import pytest
 
 from custom_components.waveshare_relay import modbus_compat as mc
+from custom_components.waveshare_relay.pulse import WavesharePulseRequest
 
 
 class DeviceIdClient:
@@ -47,6 +50,14 @@ async def test_call_falls_back_to_slave():
     assert mc._UNIT_KWARG == "slave"
 
 
+async def test_legacy_client_with_extra_kwargs_receives_configured_unit():
+    class LegacyClient:
+        async def write_coil(self, address, value, slave=0, **kwargs):
+            return address, value, slave
+
+    assert await mc.write_coil_compat(LegacyClient(), 4, False, 17) == (4, False, 17)
+
+
 async def test_call_survives_without_unit_parameter():
     result = await mc._call(NoUnitClient(), "read_coils", 0, count=1, unit_id=1)
     assert result == ("none", 0, 1)
@@ -63,9 +74,26 @@ async def test_detection_is_cached_after_first_call():
     assert mc._UNIT_KWARG == "device_id"
 
 
-def test_pulse_pdu_carries_ticks_as_value():
-    pdu = mc._build_pulse_pdu(0x0204, 5, 1)
-    assert pdu.encode() == struct.pack(">HH", 0x0204, 5)
+def test_pulse_self_check_needs_no_socket(monkeypatch):
+    def forbid_socket(*args, **kwargs):
+        pytest.fail("Local pulse check attempted to create a socket")
+
+    monkeypatch.setattr(socket, "socket", forbid_socket)
+    assert mc.pulse_encoding_supported(17)
+
+
+@pytest.mark.parametrize("hook", ["encode", "x_encode"])
+def test_pulse_encoders_carry_ticks_as_value(hook):
+    pdu = WavesharePulseRequest(0x0204, 5, 17)
+    assert getattr(pdu, hook)() == struct.pack(">HH", 0x0204, 5)
+
+
+async def test_no_second_pulse_if_execute_itself_raises_type_error():
+    client = AsyncMock()
+    client.execute.side_effect = TypeError("error after dispatch")
+    with pytest.raises(TypeError, match="after dispatch"):
+        await mc.write_pulse_compat(client, 0x0204, 500, 17)
+    client.execute.assert_awaited_once()
 
 
 @pytest.mark.parametrize(
@@ -89,7 +117,7 @@ async def test_wire_format_normal_write_and_pulse(duration_ms, ticks):
                 frame = self.buf[: 6 + length]
                 self.buf = self.buf[6 + length :]
                 unit, request = frame[6], frame[7:]
-                captured.append(request)
+                captured.append(bytes([unit]) + request)
                 response = request if request[0] == 0x05 else bytes([0x01, 1, 0])
                 self.transport.write(
                     struct.pack(">HHHB", tid, pid, len(response) + 1, unit) + response
@@ -104,17 +132,18 @@ async def test_wire_format_normal_write_and_pulse(duration_ms, ticks):
     assert await client.connect()
     try:
         mc._UNIT_KWARG = None
-        assert not (await mc.read_coils_compat(client, 0, 8, 1)).isError()
+        unit_id = 17
+        assert not (await mc.read_coils_compat(client, 0, 8, unit_id)).isError()
 
-        assert not (await mc.write_coil_compat(client, 3, True, 1)).isError()
-        fc, addr, value = captured[-1][0], *struct.unpack(">HH", captured[-1][1:5])
-        assert (fc, addr, value) == (5, 3, 0xFF00)
+        assert not (await mc.write_coil_compat(client, 3, True, unit_id)).isError()
+        assert captured[-1] == struct.pack(">BBHH", unit_id, 5, 3, 0xFF00)
 
         assert not (
-            await mc.write_pulse_compat(client, 0x0204, duration_ms, 1)
+            await mc.write_pulse_compat(client, 0x0204, duration_ms, unit_id)
         ).isError()
-        fc, addr, value = captured[-1][0], *struct.unpack(">HH", captured[-1][1:5])
-        assert (fc, addr, value) == (5, 0x0204, ticks)
+        assert captured[-1] == struct.pack(">BBHH", unit_id, 5, 0x0204, ticks)
+        assert not (await mc.write_coil_compat(client, 4, False, unit_id)).isError()
+        assert captured[-1] == struct.pack(">BBHH", unit_id, 5, 4, 0)
     finally:
         client.close()
         server.close()

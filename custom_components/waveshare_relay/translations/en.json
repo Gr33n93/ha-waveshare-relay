@@ -42,6 +42,7 @@
     }
   },
   "exceptions": {
+    "pulse_encoding_unsupported": {"message": "Pulse not sent: the installed Modbus library failed the pulse duration check. You can still turn relays off individually or use “All relays off”."},
     "connection_failed": {"message": "Could not connect to the relay board at {host}:{port}. Check the connection and logs for details."},
     "device_not_found": {"message": "Device {device_id} not found."},
     "device_not_active": {"message": "The selected device does not belong to an active Waveshare integration."},

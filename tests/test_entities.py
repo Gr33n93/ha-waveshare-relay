@@ -2,8 +2,10 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 import json
 from pathlib import Path
+from string import Formatter
 
 import custom_components.waveshare_relay as pkg
+from custom_components.waveshare_relay import binary_sensor as binary_sensor_mod
 from custom_components.waveshare_relay import entity as ent
 from custom_components.waveshare_relay import select as select_mod
 from custom_components.waveshare_relay import sensor as sensor_mod
@@ -19,6 +21,20 @@ def make_coordinator_mock(names=("Garage", "Relais 2")):
     coordinator.relay_count = len(names)
     coordinator.stats = {"verbunden": True}
     return coordinator
+
+
+def test_connection_sensor_stays_available_through_outage_and_recovery():
+    coordinator = make_coordinator_mock()
+    entry = MagicMock(entry_id="e1")
+    with patch.object(ent.CoordinatorEntity, "__init__", patch_ce):
+        connection = binary_sensor_mod.WaveshareConnectionSensor(coordinator, entry)
+        switch = switch_mod.WaveshareRelaySwitch(coordinator, entry, 0)
+
+    for connected in (True, False, False, True):
+        coordinator.last_update_success = connected
+        assert connection.available is True
+        assert connection.is_on is connected
+        assert switch.available is connected
 
 
 def test_channel_entity_identity_and_dynamic_names():
@@ -55,14 +71,17 @@ def test_translation_coverage_and_english_channel_names():
     english = json.loads((translation_dir / "en.json").read_text())
     german = json.loads((translation_dir / "de.json").read_text())
 
-    def paths(value, prefix=()):
+    def placeholders(value, prefix=()):
         if isinstance(value, dict):
-            return {path for key, child in value.items() for path in paths(child, (*prefix, key))}
-        return {prefix}
+            return {
+                path: fields
+                for key, child in value.items()
+                for path, fields in placeholders(child, (*prefix, key)).items()
+            }
+        return {prefix: {field for _, field, _, _ in Formatter().parse(value) if field is not None}}
 
-    assert paths(english) == paths(german)
     source = json.loads((translation_dir.parent / "strings.json").read_text())
-    assert paths(english) == paths(source)
+    assert placeholders(english) == placeholders(german) == placeholders(source)
     assert english["entity"]["sensor"]["channel_aus_duration"]["name"].format(channel="Garage") == "Garage off duration"
 
     coordinator = make_coordinator_mock(("Garage",))
